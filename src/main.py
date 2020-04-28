@@ -2,10 +2,9 @@ import json
 
 from tqdm import tqdm
 
-from src import reddit, browser_actions, twitter, logger
+from src import reddit, browser_actions, twitter, logger, scraper
 
 if __name__ == '__main__':
-
     with open('../config.json') as json_data_file:
         config = json.load(json_data_file)
 
@@ -15,9 +14,15 @@ if __name__ == '__main__':
     reddit.init(config['reddit_auth'])
     twitter.init(config['twitter_auth'])
 
-    urls = reddit.get_urls()[9:]
+    urls_reddit = reddit.get_urls()
+    urls_gleamlist = scraper.get_urls_gleamlist()
+
+    urls = urls_reddit.copy()
+    urls.extend(urls_gleamlist)
+    # remove duplicates
+    urls = list(dict.fromkeys(urls))
+
     #urls = ["https://gleam.io/examples/competitions/every-entry-type"]
-    #urls = ["https://gleam.io/IsHJp/astro-gaming-a40-headset-blue-microphone-and-kontrol-freek-giveaway-april-global?gsr=IsHJp-j5hBhEPqKh"]
 
     browser_actions.init_driver()
 

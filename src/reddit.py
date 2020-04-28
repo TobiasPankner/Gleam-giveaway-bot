@@ -16,6 +16,8 @@ def init(user_auth):
 def get_urls():
     urls = []
 
+    print(f"Pulling links from /r/giveaways")
+
     subreddit = reddit.subreddit('giveaways')
     submissions_top = subreddit.top(time_filter='week', limit=100)
     submissions_new = subreddit.new(limit=None)
@@ -38,6 +40,6 @@ def get_urls():
     # remove duplicates
     urls = list(dict.fromkeys(urls))
 
-    print(f"Pulled {len(urls)} links from /r/giveaways.")
+    print(f"Pulled {len(urls)} links from /r/giveaways\n")
 
     return urls

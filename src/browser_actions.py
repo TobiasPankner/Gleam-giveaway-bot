@@ -119,9 +119,9 @@ def do_giveaway(giveaway_info, whitelist):
         print("Giveaway has ended")
         return
 
-    if campaign['login_first']:
-        print("Giveaway would require login")
-        return
+    # if campaign['login_first']:
+    #     print("Giveaway would require login")
+    #     return
 
     for entry_method in entry_methods:
         minimize_all_entries()
