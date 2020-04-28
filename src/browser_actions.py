@@ -126,11 +126,12 @@ def do_giveaway(giveaway_info, whitelist):
     for entry_method in entry_methods:
         minimize_all_entries()
 
+        input("Press to continue")
         if entry_method['entry_type'] not in whitelist:
             continue
 
-        if entry_method['requires_details']:
-            continue
+        #if entry_method['requires_details']:
+            #continue
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
@@ -152,10 +153,19 @@ def do_giveaway(giveaway_info, whitelist):
 
         # continue button
         try:
-            cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>div")
+            cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>div>a")
+        except exceptions.NoSuchElementException:
+            try:
+                cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>button")
+            except exceptions.NoSuchElementException:
+                try:
+                    cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>div")
+                except exceptions.NoSuchElementException:
+                    continue
+
+        try:
             cont_btn.click()
-        except Exception as e:
-            # print(e)
+        except:
             pass
 
     print(giveaway_info)
@@ -242,18 +252,31 @@ def do_entry(entry_method_elem, entry_type):
 
     elif entry_type.count("visit") > 0 or entry_type == 'custom_action':
         main_window = driver.current_window_handle
+        time_to_visit = 1
+
+        try:
+            timerElem = entry_method_elem.find_element_by_css_selector("span[ng-hide^='!(isTimerAction']")
+            numbers = [int(s) for s in timerElem.text.split() if s.isdigit() and 0 < int(s) < 150]
+            if len(numbers) > 0:
+                time_to_visit = numbers[0]
+        except exceptions.NoSuchElementException:
+            pass
 
         try:
             visit_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']>div>form>div>div>a[ng-click*='Visit']")
         except exceptions.NoSuchElementException:
-            return
+            try:
+                visit_elem = entry_method_elem.find_element_by_css_selector(
+                    "div[class='expandable']>div>form>div>div>p>a[href^='http']")
+            except exceptions.NoSuchElementException:
+                return
 
         try:
             visit_elem.click()
         except exceptions.ElementNotInteractableException:
             return
 
-        time.sleep(1)
+        time.sleep(time_to_visit)
 
         handles = driver.window_handles
 

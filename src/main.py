@@ -15,9 +15,9 @@ if __name__ == '__main__':
     reddit.init(config['reddit_auth'])
     twitter.init(config['twitter_auth'])
 
-    urls = reddit.get_urls()
+    urls = reddit.get_urls()[9:]
     #urls = ["https://gleam.io/examples/competitions/every-entry-type"]
-    #urls = ["https://gleam.io/NB5Aj/fortnite-skin-giveaway"]
+    #urls = ["https://gleam.io/IsHJp/astro-gaming-a40-headset-blue-microphone-and-kontrol-freek-giveaway-april-global?gsr=IsHJp-j5hBhEPqKh"]
 
     browser_actions.init_driver()
 
