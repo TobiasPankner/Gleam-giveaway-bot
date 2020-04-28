@@ -1,5 +1,13 @@
 {
-  "client_id":  "",
-  "client_secret": "",
-  "user_agent": ""
+  "reddit_auth": {
+    "client_id": "",
+    "client_secret": "",
+    "user_agent": ""
+  },
+  "twitter_auth": {
+    "consumer_key": "",
+    "consumer_secret": "",
+    "access_token": "",
+    "access_token_secret": ""
+  }
 }
