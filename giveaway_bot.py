@@ -1,14 +1,12 @@
 import json
 
-from tqdm import tqdm
-
 from src import reddit, browser_actions, twitter, logger, scraper
 
 if __name__ == '__main__':
-    with open('../config.json') as json_data_file:
+    with open('config.json') as json_data_file:
         config = json.load(json_data_file)
 
-    with open('../data/entry_types.json') as json_data_file:
+    with open('data/entry_types.json') as json_data_file:
         entry_types = json.load(json_data_file)
 
     reddit.init(config['reddit_auth'])
