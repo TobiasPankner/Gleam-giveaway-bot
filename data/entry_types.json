@@ -1,0 +1,118 @@
+{
+  "visit_view": [
+    "facebook_visit",
+    "instagram_visit_profile",
+    "instagram_view_post",
+    "indiegogo_visit",
+    "kickstarter_visit",
+    "patreon_visit",
+    "pinterest_visit",
+    "reddit_visit",
+    "youtube_visit_channel",
+    "twitter_view_post"
+  ],
+  "discord": [
+    "discord_enter"
+  ],
+  "facebook": [
+    "facebook_enter",
+    "facebook_view_post"
+  ],
+  "instagram": [
+    "instagram_enter",
+    "instagram_choose"
+  ],
+  "linkedin": [
+    "linkedin_share",
+    "linkedin_follow"
+  ],
+  "mixer": [
+    "mixer_enter",
+    "mixer_follow"
+  ],
+  "pinterest": [
+    "pinterest_enter",
+    "pinterest_pin",
+    "pinterest_board"
+  ],
+  "patreon": [
+    "patreon_enter"
+  ],
+  "producthunt": [
+    "producthunt_follow",
+    "producthunt_upvote"
+  ],
+  "reddit": [
+    "reddit_enter"
+  ],
+  "snapchat": [
+    "snapchat_snapcode"
+  ],
+  "soundcloud": [
+    "soundcloud_follow",
+    "soundcloud_listen",
+    "soundcloud_like",
+    "soundcloud_repost",
+    "soundcloud_choose"
+  ],
+  "spotify": [
+    "spotify_listen",
+    "spotify_follow",
+    "spotify_save",
+    "spotify_presave"
+  ],
+  "steam": [
+    "steam_enter",
+    "steam_play_game",
+    "steam_join_group"
+  ],
+  "tumblr": [
+    "tumblr_follow",
+    "tumblr_like",
+    "tumblr_reblog",
+    "tumblr_reblog_campaign"
+  ],
+  "twitchtv": [
+    "twitchtv_enter",
+    "twitchtv_follow"
+  ],
+  "twitter": [
+    "twitter_enter",
+    "twitter_follow",
+    "twitter_retweet",
+    "twitter_tweet",
+    "twitter_hashtags"
+  ],
+  "youtube": [
+    "youtube_enter"
+  ],
+  "other": [
+    "custom_action",
+    "download_app",
+    "loyalty",
+    "email_subscribe",
+    "vimeo_watch",
+    "wistia_watch"
+  ],
+  "blacklist": [
+    "coupon_action",
+    "disqus_comment",
+    "eventbrite_attend_event",
+    "eventbrite_attend_venue",
+    "facebook_check_in",
+    "facebook_media",
+    "upload_action",
+    "goodreads_follow",
+    "mixer_subscribe",
+    "podcast_subscribe",
+    "promote_campaign",
+    "secret_code",
+    "media_action",
+    "submit_url",
+    "twitchtv_subscribe",
+    "twitter_media",
+    "typeform_completed",
+    "share_action",
+    "youtube_video"
+  ]
+}
