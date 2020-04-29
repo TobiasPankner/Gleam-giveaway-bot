@@ -1,6 +1,5 @@
 import csv
-
-header = "\"url\",\"name\",\"id\",\"my_entries\",\"available_entries\",\"total_entries\",\"win_chance\",\"ends_at\""
+import os
 
 
 def write_log(filename, giveaway_info, user_info):
@@ -15,11 +14,15 @@ def write_log(filename, giveaway_info, user_info):
     win_chance_str = str(round((my_entries / total_entries) * 100, 4)) + '%' if giveaway_info[
                                                                                     'total_entries'] > 0 else ""
 
-    with open(filename, 'w', newline='') as csvfile:
+    write_header = False if os.path.isfile(filename) else True
+
+    with open(filename, 'a', newline='') as csvfile:
         fieldnames = ['url', 'name', 'id', 'my_entries', 'available_entries', 'total_entries', 'win_chance', 'ends_at']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
 
-        writer.writeheader()
+        if write_header:
+            writer.writeheader()
+
         writer.writerow({'url': campaign['stand_alone_url'],
                          'name': campaign['name'],
                          'id': campaign['key'],
@@ -34,6 +37,10 @@ def write_log(filename, giveaway_info, user_info):
 
 def read_log(filename):
     id_set = set()
+
+    if not os.path.isfile(filename):
+        return id_set
+
     with open(filename, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:

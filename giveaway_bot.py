@@ -1,9 +1,11 @@
 import json
+import re
 
 from src import reddit, browser_actions, twitter, logger, scraper
 
 if __name__ == '__main__':
-    a = logger.read_log("data/history.csv")
+    history_ids = logger.read_log("data/history.csv")
+
     with open('config.json') as json_data_file:
         config = json.load(json_data_file)
 
@@ -18,14 +20,33 @@ if __name__ == '__main__':
 
     urls = urls_reddit.copy()
     urls.extend(urls_gleamlist)
-    # remove duplicates
+
+    print(f"Total links: {len(urls)}")
+
+    # remove unnecessary info of the url and ignore previously visited
+    for i, url in enumerate(urls):
+        id_re = re.search(r"\w+/(\w+)[/-]", url)
+        if not id_re:
+            continue
+
+        id_str = id_re.group(1)
+
+        new_url = f"https://gleam.io/{id_str}/a"
+        if id_str not in history_ids:
+            urls[i] = new_url
+        else:
+            urls[i] = ""
+
+    urls = [url for url in urls if url != ""]
     urls = list(dict.fromkeys(urls))
+
+    print(f"Total links after duplicate removal: {len(urls)}")
 
     #urls = ["https://gleam.io/examples/competitions/every-entry-type"]
 
     browser_actions.init_driver()
 
-    for url in urls[100:]:
+    for url in urls:
         browser_actions.get_url(url)
         print(f"\nVisited {url}")
 
@@ -37,6 +58,9 @@ if __name__ == '__main__':
         whitelist = browser_actions.make_whitelist(entry_types, user_info)
 
         browser_actions.do_giveaway(giveaway_info, whitelist)
+
+        # update the info
+        giveaway_info, user_info = browser_actions.get_gleam_info(change_website=False)
 
         logger.write_log("data/history.csv", giveaway_info, user_info)
 

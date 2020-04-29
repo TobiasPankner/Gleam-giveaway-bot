@@ -56,7 +56,7 @@ def get_url(url):
     driver.get(url)
 
 
-def get_gleam_info():
+def get_gleam_info(change_website=True):
     cur_url = driver.current_url
     campaign = None
     contestant = None
@@ -102,8 +102,7 @@ def get_gleam_info():
     campaign_info_json['total_entries'] = entry_count
 
     # switch to the normal gleam page instead of some landing page
-    if campaign_info_json['campaign']['stand_alone_option'] == 'Page' or \
-            cur_url.count("gleam.io") == 0:
+    if (campaign_info_json['campaign']['stand_alone_option'] == 'Page' or cur_url.count("gleam.io") == 0) and change_website:
         print(f"Changed to standalone {campaign_info_json['campaign']['stand_alone_url']}")
         get_url(campaign_info_json['campaign']['stand_alone_url'])
 
@@ -118,10 +117,6 @@ def do_giveaway(giveaway_info, whitelist):
         print("Giveaway has ended")
         return
 
-    # if campaign['login_first']:
-    #     print("Giveaway would require login")
-    #     return
-
     for entry_method in entry_methods:
         try:
             minimize_all_entries()
@@ -131,9 +126,6 @@ def do_giveaway(giveaway_info, whitelist):
         # input("Press to continue")
         if entry_method['entry_type'] not in whitelist:
             continue
-
-        # if entry_method['requires_details']:
-        # continue
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
