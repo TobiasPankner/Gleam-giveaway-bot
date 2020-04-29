@@ -24,7 +24,7 @@ def write_log(filename, giveaway_info, user_info):
             writer.writeheader()
 
         writer.writerow({'url': campaign['stand_alone_url'],
-                         'name': campaign['name'],
+                         'name': campaign['name'].encode('ascii', 'ignore').decode(),
                          'id': campaign['key'],
                          'my_entries': str(my_entries),
                          'available_entries': str(available_entries),
