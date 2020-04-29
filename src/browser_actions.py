@@ -56,7 +56,7 @@ def get_url(url):
     driver.get(url)
 
 
-def get_gleam_info(change_website=True):
+def get_gleam_info():
     cur_url = driver.current_url
     campaign = None
     contestant = None
@@ -100,11 +100,6 @@ def get_gleam_info(change_website=True):
 
     # add the number of total entries to the dict
     campaign_info_json['total_entries'] = entry_count
-
-    # switch to the normal gleam page instead of some landing page
-    if (campaign_info_json['campaign']['stand_alone_option'] == 'Page' or cur_url.count("gleam.io") == 0) and change_website:
-        print(f"Changed to standalone {campaign_info_json['campaign']['stand_alone_url']}")
-        get_url(campaign_info_json['campaign']['stand_alone_url'])
 
     return campaign_info_json, contestant_info_json
 

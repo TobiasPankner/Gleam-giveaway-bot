@@ -60,7 +60,7 @@ if __name__ == '__main__':
         browser_actions.do_giveaway(giveaway_info, whitelist)
 
         # update the info
-        giveaway_info, user_info = browser_actions.get_gleam_info(change_website=False)
+        giveaway_info, user_info = browser_actions.get_gleam_info()
 
         logger.write_log("data/history.csv", giveaway_info, user_info)
 
