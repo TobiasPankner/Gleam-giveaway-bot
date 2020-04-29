@@ -118,7 +118,6 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             return
 
-        # input("Press to continue")
         if entry_method['entry_type'] not in whitelist:
             continue
 
@@ -254,8 +253,8 @@ def do_entry(entry_method_elem, entry_type):
                 "div[class='expandable']>div>form>div>div>a[ng-click*='Visit']")
         except exceptions.NoSuchElementException:
             try:
-                visit_elem = entry_method_elem.find_element_by_css_selector(
-                    "div[class='expandable']>div>form>div>div>p>a[href^='http']")
+                expandable_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']")
+                visit_elem = expandable_elem.find_element_by_css_selector("a[href^='http'][class*='visit']")
             except exceptions.NoSuchElementException:
                 return
 
@@ -272,6 +271,23 @@ def do_entry(entry_method_elem, entry_type):
             driver.switch_to.window(handles[1])
             driver.close()
             driver.switch_to.window(main_window)
+
+    elif entry_type == 'loyalty':
+        try:
+            expandable_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']")
+            claim_elem = expandable_elem.find_element_by_css_selector("span[class='tally']")
+        except exceptions.NoSuchElementException:
+            return
+
+        try:
+            claim_elem.click()
+        except exceptions.ElementNotInteractableException:
+            return
+
+        time.sleep(1)
+
+    elif entry_type == 'instagram_view_post' or entry_type == 'twitter_view_post':
+        time.sleep(6)
 
 
 def get_entry_elem(id):
