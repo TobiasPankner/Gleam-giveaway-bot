@@ -3,6 +3,7 @@ import json
 from src import reddit, browser_actions, twitter, logger, scraper
 
 if __name__ == '__main__':
+    a = logger.read_log("data/history.csv")
     with open('config.json') as json_data_file:
         config = json.load(json_data_file)
 
@@ -24,9 +25,9 @@ if __name__ == '__main__':
 
     browser_actions.init_driver()
 
-    for url in urls:
+    for url in urls[100:]:
         browser_actions.get_url(url)
-        print(f"Visited {url}")
+        print(f"\nVisited {url}")
 
         giveaway_info, user_info = browser_actions.get_gleam_info()
 
@@ -37,5 +38,5 @@ if __name__ == '__main__':
 
         browser_actions.do_giveaway(giveaway_info, whitelist)
 
-        logger.write_log(giveaway_info, user_info)
+        logger.write_log("data/history.csv", giveaway_info, user_info)
 

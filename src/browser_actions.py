@@ -91,7 +91,7 @@ def get_gleam_info():
 
     contestant_info_str = contestant.get_attribute("ng-init")
 
-    entry_count = contestant_info_str[contestant_info_str.find("initEntryCount(")+15:contestant_info_str.rfind(")")]
+    entry_count = contestant_info_str[contestant_info_str.find("initEntryCount(") + 15:contestant_info_str.rfind(")")]
     entry_count = int(entry_count) if entry_count != "" else -1
 
     contestant_info_str = contestant_info_str[contestant_info_str.find("{"):contestant_info_str.rfind("}") + 1]
@@ -104,7 +104,6 @@ def get_gleam_info():
     # switch to the normal gleam page instead of some landing page
     if campaign_info_json['campaign']['stand_alone_option'] == 'Page' or \
             cur_url.count("gleam.io") == 0:
-
         print(f"Changed to standalone {campaign_info_json['campaign']['stand_alone_url']}")
         get_url(campaign_info_json['campaign']['stand_alone_url'])
 
@@ -124,14 +123,17 @@ def do_giveaway(giveaway_info, whitelist):
     #     return
 
     for entry_method in entry_methods:
-        minimize_all_entries()
+        try:
+            minimize_all_entries()
+        except:
+            return
 
-        input("Press to continue")
+        # input("Press to continue")
         if entry_method['entry_type'] not in whitelist:
             continue
 
-        #if entry_method['requires_details']:
-            #continue
+        # if entry_method['requires_details']:
+        # continue
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
@@ -143,7 +145,7 @@ def do_giveaway(giveaway_info, whitelist):
         elif state == EntryStates.COMPLETED or state == EntryStates.HIDDEN:
             continue
 
-        time.sleep(1)
+        time.sleep(2)
 
         do_entry(entry_method_elem, entry_method['entry_type'])
 
@@ -168,12 +170,10 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             pass
 
-    print(giveaway_info)
     return None
 
 
 def do_entry(entry_method_elem, entry_type):
-
     if entry_type == 'twitter_follow':
         try:
             tweet_btn = entry_method_elem.find_element_by_css_selector("div[class='expandable']>div>div>div>div>div>a")
@@ -263,7 +263,8 @@ def do_entry(entry_method_elem, entry_type):
             pass
 
         try:
-            visit_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']>div>form>div>div>a[ng-click*='Visit']")
+            visit_elem = entry_method_elem.find_element_by_css_selector(
+                "div[class='expandable']>div>form>div>div>a[ng-click*='Visit']")
         except exceptions.NoSuchElementException:
             try:
                 visit_elem = entry_method_elem.find_element_by_css_selector(

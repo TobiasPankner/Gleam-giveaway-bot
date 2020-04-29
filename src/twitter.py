@@ -27,5 +27,7 @@ def retweet(tweet_id):
 
 def tweet(text):
     if api is not None:
-        api.update_status(text)
-
+        try:
+            api.update_status(text)
+        except tweepy.error.TweepError:
+            return
