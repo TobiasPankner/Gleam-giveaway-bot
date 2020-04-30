@@ -9,14 +9,14 @@
     "pinterest_visit",
     "reddit_visit",
     "youtube_visit_channel",
-    "twitter_view_post"
+    "twitter_view_post",
+    "facebook_view_post"
   ],
   "discord": [
     "discord_enter"
   ],
   "facebook": [
-    "facebook_enter",
-    "facebook_view_post"
+    "facebook_enter"
   ],
   "instagram": [
     "instagram_enter",

@@ -56,6 +56,16 @@ def get_url(url):
     driver.get(url)
 
 
+def open_in_new_tab(url):
+    driver.execute_script("window.open('{}');".format(url))
+    handles = driver.window_handles
+    driver.switch_to.window(handles[len(handles) - 1])
+
+
+def refresh():
+    driver.refresh()
+
+
 def get_gleam_info():
     cur_url = driver.current_url
     campaign = None
@@ -108,6 +118,12 @@ def do_giveaway(giveaway_info, whitelist):
     campaign = giveaway_info['campaign']
     entry_methods = giveaway_info['entry_methods']
 
+    # put the mandatory entry methods first
+    entry_methods_not_mandatory = [entry_method for entry_method in entry_methods if not entry_method['mandatory']]
+    entry_methods = [entry_method for entry_method in entry_methods if entry_method['mandatory']]
+
+    entry_methods.extend(entry_methods_not_mandatory)
+
     if campaign['finished'] or campaign['paused']:
         print("Giveaway has ended")
         return
@@ -118,6 +134,8 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             return
 
+        # input("press")
+
         if entry_method['entry_type'] not in whitelist:
             continue
 
@@ -126,7 +144,10 @@ def do_giveaway(giveaway_info, whitelist):
             continue
 
         if state == EntryStates.DEFAULT:
-            entry_method_elem.click()
+            try:
+                entry_method_elem.click()
+            except exceptions.ElementClickInterceptedException:
+                continue
 
         elif state == EntryStates.COMPLETED or state == EntryStates.HIDDEN:
             continue
@@ -149,12 +170,16 @@ def do_giveaway(giveaway_info, whitelist):
                 try:
                     cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>div")
                 except exceptions.NoSuchElementException:
-                    continue
+                    try:
+                        cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>a[ng-click^='saveEntry']")
+                    except exceptions.NoSuchElementException:
+                        continue
 
         try:
             cont_btn.click()
         except:
             pass
+        time.sleep(1)
 
     return None
 
@@ -256,7 +281,11 @@ def do_entry(entry_method_elem, entry_type):
                 expandable_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']")
                 visit_elem = expandable_elem.find_element_by_css_selector("a[href^='http'][class*='visit']")
             except exceptions.NoSuchElementException:
-                return
+                try:
+                    expandable_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']")
+                    visit_elem = expandable_elem.find_element_by_css_selector("a[href^='http']")
+                except exceptions.NoSuchElementException:
+                    return
 
         try:
             visit_elem.click()
@@ -286,7 +315,7 @@ def do_entry(entry_method_elem, entry_type):
 
         time.sleep(1)
 
-    elif entry_type == 'instagram_view_post' or entry_type == 'twitter_view_post':
+    elif entry_type == 'instagram_view_post' or entry_type == 'twitter_view_post' or entry_type == 'facebook_view_post':
         time.sleep(6)
 
 
@@ -328,9 +357,3 @@ def wait_till_found(sel, timeout):
     except exceptions.TimeoutException:
         print(f"Timeout waiting for element. ({sel})")
         return None
-
-
-def open_in_new_tab(url):
-    driver.execute_script("window.open('{}');".format(url))
-    handles = driver.window_handles
-    driver.switch_to.window(handles[len(handles) - 1])
