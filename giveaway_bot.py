@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     print(f"Total links after duplicate removal: {len(urls)}")
 
-    #urls = ["https://gleam.io/examples/competitions/every-entry-type"]
+    # urls = ["https://gleam.io/yxNtl/follow-authors-on-social-media"]
 
     browser_actions.init_driver()
 
@@ -62,6 +62,10 @@ if __name__ == '__main__':
         # update the info
         browser_actions.refresh()
         giveaway_info, user_info = browser_actions.get_gleam_info()
+
+        if giveaway_info is None:
+            print("Could not write log")
+            continue
 
         logger.write_log("data/history.csv", giveaway_info, user_info)
 

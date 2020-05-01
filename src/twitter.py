@@ -14,7 +14,11 @@ def init(user_auth):
 
 def follow(username):
     if api is not None:
-        api.create_friendship(username)
+        try:
+            api.create_friendship(username)
+        except tweepy.error.TweepError as e:
+            # print(e)
+            pass
 
 
 def retweet(tweet_id):

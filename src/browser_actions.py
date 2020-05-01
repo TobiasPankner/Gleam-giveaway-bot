@@ -15,6 +15,7 @@ from urllib.parse import parse_qs
 from src import twitter
 
 driver: webdriver.Chrome = None
+storage = None
 
 
 class EntryStates(Enum):
@@ -24,14 +25,69 @@ class EntryStates(Enum):
     HIDDEN = 3
 
 
+class LocalStorage:
+
+    def __init__(self, driver):
+        self.driver = driver
+
+    def __len__(self):
+        return self.driver.execute_script("return window.localStorage.length;")
+
+    def items(self):
+        return self.driver.execute_script(
+            "var ls = window.localStorage, items = {}; ""for (var i = 0, k; i < ls.length; ++i) ""  items[k = ls.key(i)] = ls.getItem(k); ""return items; ")
+
+    def keys(self):
+        return self.driver.execute_script(
+            "var ls = window.localStorage, keys = []; "
+            "for (var i = 0; i < ls.length; ++i) "
+            "  keys[i] = ls.key(i); "
+            "return keys; ")
+
+    def get(self, key):
+        return self.driver.execute_script("return window.localStorage.getItem(arguments[0]);", key)
+
+    def set(self, key, value):
+        self.driver.execute_script("window.localStorage.setItem(arguments[0], arguments[1]);", key, value)
+
+    def has(self, key):
+        return key in self.keys()
+
+    def remove(self, key):
+        self.driver.execute_script("window.localStorage.removeItem(arguments[0]);", key)
+
+    def clear(self):
+        self.driver.execute_script("window.localStorage.clear();")
+
+    def __getitem__(self, key):
+        value = self.get(key)
+        if value is None:
+            raise KeyError(key)
+        return value
+
+    def __setitem__(self, key, value):
+        self.set(key, value)
+
+    def __contains__(self, key):
+        return key in self.keys()
+
+    def __iter__(self):
+        return self.items().__iter__()
+
+    def __repr__(self):
+        return self.items().__str__()
+
+
 def init_driver():
-    global driver
+    global driver, storage
 
     options = Options()
     options.add_argument("user-data-dir=C:/Users/Tobias/AppData/Local/Google/Chrome/User Data")
     options.add_argument("profile-directory=Profile 2")
     # options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(chrome_options=options)
+
+    storage = LocalStorage(driver)
 
 
 def make_whitelist(entry_types, user_info):
@@ -115,6 +171,8 @@ def get_gleam_info():
 
 
 def do_giveaway(giveaway_info, whitelist):
+    main_window = driver.current_window_handle
+    to_revisit = []
     campaign = giveaway_info['campaign']
     entry_methods = giveaway_info['entry_methods']
 
@@ -154,37 +212,58 @@ def do_giveaway(giveaway_info, whitelist):
 
         time.sleep(2)
 
-        do_entry(entry_method_elem, entry_method['entry_type'])
+        timer_event = do_entry(entry_method_elem, entry_method['entry_type'], entry_method['id'])
+        if timer_event is True:
+            to_revisit.append(entry_method['id'])
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
             continue
 
-        # continue button
-        try:
-            cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>div>a")
-        except exceptions.NoSuchElementException:
-            try:
-                cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>button")
-            except exceptions.NoSuchElementException:
-                try:
-                    cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>div")
-                except exceptions.NoSuchElementException:
-                    try:
-                        cont_btn = entry_method_elem.find_element_by_css_selector("div[class^='form-actions']>a[ng-click^='saveEntry']")
-                    except exceptions.NoSuchElementException:
-                        continue
+        cont_btn = get_continue_elem(entry_method_elem)
+        if cont_btn is None:
+            continue
 
         try:
             cont_btn.click()
         except:
             pass
+
+        driver.switch_to.window(main_window)
         time.sleep(1)
+
+    if len(to_revisit) == 0:
+        return None
+
+    refresh()
+    for entry_method_id in to_revisit:
+        try:
+            minimize_all_entries()
+        except:
+            return
+
+        entry_method_elem, state = get_entry_elem(entry_method_id)
+        if entry_method_elem is None:
+            continue
+
+        if state == EntryStates.DEFAULT:
+            try:
+                entry_method_elem.click()
+            except exceptions.ElementClickInterceptedException:
+                continue
+
+        time.sleep(1)
+
+        cont_btn = get_continue_elem(entry_method_elem)
+        if cont_btn is None:
+            continue
+
+        time.sleep(0.5)
 
     return None
 
 
-def do_entry(entry_method_elem, entry_type):
+def do_entry(entry_method_elem, entry_type, entry_id):
     if entry_type == 'twitter_follow':
         try:
             tweet_btn = entry_method_elem.find_element_by_css_selector("div[class='expandable']>div>div>div>div>div>a")
@@ -240,7 +319,11 @@ def do_entry(entry_method_elem, entry_type):
         tweet_url = tweet_elem.get_attribute("href")
 
         parsed = urlparse.urlparse(tweet_url)
-        hashtags = parse_qs(parsed.query)['hashtags']
+        parsed = parse_qs(parsed.query)
+        if 'hashtags' not in parsed:
+            return
+
+        hashtags = parsed['hashtags']
         if len(hashtags) == 0:
             return
         hashtags = hashtags[0].split(',')
@@ -262,44 +345,22 @@ def do_entry(entry_method_elem, entry_type):
         time.sleep(1)
 
     elif entry_type.count("visit") > 0 or entry_type == 'custom_action':
-        main_window = driver.current_window_handle
-        time_to_visit = 1
+        millis = int(round(time.time() * 1000))
 
+        # set a storage entry to fake a visit
+        storage[f"D-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":7}},\"v\":\"V\"}}"
+
+        # if there is a minimum time on the entry set another storage entry
         try:
-            timerElem = entry_method_elem.find_element_by_css_selector("span[ng-hide^='!(isTimerAction']")
-            numbers = [int(s) for s in timerElem.text.split() if s.isdigit() and 0 < int(s) < 150]
-            if len(numbers) > 0:
-                time_to_visit = numbers[0]
+            entry_method_elem.find_element_by_css_selector("span[ng-hide^='!(isTimerAction']")
+
+            storage[f"T-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":1}},\"v\":{int(time.time()-300)}}}"
+
+            return True
         except exceptions.NoSuchElementException:
             pass
 
-        try:
-            visit_elem = entry_method_elem.find_element_by_css_selector(
-                "div[class='expandable']>div>form>div>div>a[ng-click*='Visit']")
-        except exceptions.NoSuchElementException:
-            try:
-                expandable_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']")
-                visit_elem = expandable_elem.find_element_by_css_selector("a[href^='http'][class*='visit']")
-            except exceptions.NoSuchElementException:
-                try:
-                    expandable_elem = entry_method_elem.find_element_by_css_selector("div[class='expandable']")
-                    visit_elem = expandable_elem.find_element_by_css_selector("a[href^='http']")
-                except exceptions.NoSuchElementException:
-                    return
-
-        try:
-            visit_elem.click()
-        except exceptions.ElementNotInteractableException:
-            return
-
-        time.sleep(time_to_visit)
-
-        handles = driver.window_handles
-
-        if len(handles) > 1:
-            driver.switch_to.window(handles[1])
-            driver.close()
-            driver.switch_to.window(main_window)
+        time.sleep(2)
 
     elif entry_type == 'loyalty':
         try:
@@ -341,6 +402,25 @@ def get_entry_elem(id):
 
     return entry_method_elem, state
 
+
+def get_continue_elem(parent_elem):
+    # continue button
+    try:
+        cont_btn = parent_elem.find_element_by_css_selector("div[class^='form-actions']>div>a")
+    except exceptions.NoSuchElementException:
+        try:
+            cont_btn = parent_elem.find_element_by_css_selector("div[class^='form-actions']>button")
+        except exceptions.NoSuchElementException:
+            try:
+                cont_btn = parent_elem.find_element_by_css_selector("div[class^='form-actions']>div")
+            except exceptions.NoSuchElementException:
+                try:
+                    cont_btn = parent_elem.find_element_by_css_selector(
+                        "div[class^='form-actions']>a[ng-click^='saveEntry']")
+                except exceptions.NoSuchElementException:
+                    return None
+
+    return cont_btn
 
 def minimize_all_entries():
     entry_method_elems = driver.find_elements_by_css_selector("div[class^='entry-method'][class*='expanded']")

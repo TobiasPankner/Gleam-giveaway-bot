@@ -19,8 +19,7 @@
     "facebook_enter"
   ],
   "instagram": [
-    "instagram_enter",
-    "instagram_choose"
+    "instagram_enter"
   ],
   "linkedin": [
     "linkedin_share",
@@ -113,6 +112,7 @@
     "twitter_media",
     "typeform_completed",
     "share_action",
-    "youtube_video"
+    "youtube_video",
+    "instagram_choose"
   ]
 }
