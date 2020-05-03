@@ -172,9 +172,11 @@ def get_gleam_info():
 
 def do_giveaway(giveaway_info, whitelist):
     main_window = driver.current_window_handle
-    to_revisit = []
+    elems_to_revisit = []
     campaign = giveaway_info['campaign']
     entry_methods = giveaway_info['entry_methods']
+
+    storage.clear()
 
     # put the mandatory entry methods first
     entry_methods_not_mandatory = [entry_method for entry_method in entry_methods if not entry_method['mandatory']]
@@ -210,11 +212,11 @@ def do_giveaway(giveaway_info, whitelist):
         elif state == EntryStates.COMPLETED or state == EntryStates.HIDDEN:
             continue
 
-        time.sleep(2)
+        time.sleep(1.5)
 
-        timer_event = do_entry(entry_method_elem, entry_method['entry_type'], entry_method['id'])
-        if timer_event is True:
-            to_revisit.append(entry_method['id'])
+        to_revisit = do_entry(entry_method_elem, entry_method['entry_type'], entry_method['id'])
+        if to_revisit is True:
+            elems_to_revisit.append(entry_method['id'])
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
@@ -232,11 +234,11 @@ def do_giveaway(giveaway_info, whitelist):
         driver.switch_to.window(main_window)
         time.sleep(1)
 
-    if len(to_revisit) == 0:
+    if len(elems_to_revisit) == 0:
         return None
 
     refresh()
-    for entry_method_id in to_revisit:
+    for entry_method_id in elems_to_revisit:
         try:
             minimize_all_entries()
         except:
@@ -251,6 +253,8 @@ def do_giveaway(giveaway_info, whitelist):
                 entry_method_elem.click()
             except exceptions.ElementClickInterceptedException:
                 continue
+        else:
+            continue
 
         time.sleep(1)
 
@@ -352,15 +356,17 @@ def do_entry(entry_method_elem, entry_type, entry_id):
 
         # if there is a minimum time on the entry set another storage entry
         try:
-            entry_method_elem.find_element_by_css_selector("span[ng-hide^='!(isTimerAction']")
+            timer_elem = entry_method_elem.find_element_by_css_selector("span[ng-hide^='!(isTimerAction']")
 
-            storage[f"T-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":1}},\"v\":{int(time.time()-300)}}}"
+            if timer_elem.text.count("NaN") == 0 and timer_elem.text != "":
 
-            return True
+                storage[f"T-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":1}},\"v\":{int(time.time()-300)}}}"
+
+                return True
         except exceptions.NoSuchElementException:
             pass
 
-        time.sleep(2)
+        time.sleep(1)
 
     elif entry_type == 'loyalty':
         try:
@@ -421,6 +427,7 @@ def get_continue_elem(parent_elem):
                     return None
 
     return cont_btn
+
 
 def minimize_all_entries():
     entry_method_elems = driver.find_elements_by_css_selector("div[class^='entry-method'][class*='expanded']")

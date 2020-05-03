@@ -25,8 +25,9 @@ if __name__ == '__main__':
 
     # remove unnecessary info of the url and ignore previously visited
     for i, url in enumerate(urls):
-        id_re = re.search(r"\w+/(\w+)[/-]", url)
+        id_re = re.search(r"\w+/(\w{5})[/-]", url)
         if not id_re:
+            urls[i] = ""
             continue
 
         id_str = id_re.group(1)
