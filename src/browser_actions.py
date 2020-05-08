@@ -127,6 +127,13 @@ def get_gleam_info():
     campaign = None
     contestant = None
 
+    try:
+        driver.find_element_by_css_selector("img[src='/images/error/404.png']")
+        print("Page doesn't exist")
+        return None, None
+    except:
+        pass
+
     if cur_url.count("gleam.io") > 0:
         contestant = wait_till_found("div[ng-controller='EnterController']", 7)
         campaign = wait_till_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
