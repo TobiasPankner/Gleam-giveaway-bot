@@ -5,7 +5,7 @@ Python bot to automatically find and complete gleam giveaways.
 ## Warning
 
 Usage of this script is forbidden by the TOS of gleam and will probably get you banned.  
-**DO NOT USE WITH YOUR REAL ACCOUNTS.** They will get spammed with messages and potentially flagged for suspicous activity.  
+**DO NOT USE WITH YOUR REAL ACCOUNTS OR EMAIL.** They will get spammed with messages and potentially flagged for suspicous activity.  
 Use at your own risk.
 
 ## Prerequisites
