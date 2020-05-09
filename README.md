@@ -37,6 +37,9 @@ To do this:
 
   Then click on the "Enter with x" elements and connect the corresponding account. The more social media accounts you use, the more entries will be able to be completed.
   
- - Start the script: `python giveaway_bot.py`
+## Running the script
+After the setup above is completed, close all Chrome windows and start the script (`python giveaway_bot.py`). Now the bot will fetch urls from "http://gleamlist.com" and, if you configured it, from "https://www.reddit.com/r/giveaways/".  
+
+After this it will complete as many entries as possible and add the site to history. The history file is saved in the data directory and contains useful information about the completed giveaways.
 
 
