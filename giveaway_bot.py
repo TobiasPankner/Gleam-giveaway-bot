@@ -58,12 +58,12 @@ if __name__ == '__main__':
 
         giveaway_info, user_info = browser_actions.get_gleam_info()
 
+        if giveaway_info is None:
+            continue
+
         if 'authentications' not in user_info['contestant']:
             print("Not logged in with name+email")
             exit(0)
-
-        if giveaway_info is None:
-            continue
 
         whitelist = browser_actions.make_whitelist(entry_types, user_info)
 
