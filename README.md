@@ -23,10 +23,11 @@ Use at your own risk.
 To do this:  
 
 	 1. Open Chrome and click on Profile in the top right.
-	 2. Choose a name and picture
-	 3. With the new profile visit: *chrome://version/*
-	 4. Copy the Profile Path (On Windows, should be something like "C:\Users\User\AppData\Local\Google\Chrome\User 		Data\Profile 2" ). 
-	 5. Modify the config.json file.   In the "user-data-dir" field enter the path from before up to the "User Data" part with escaped backslashes or forward shlashes (e.g 	"C:/Users/User/AppData/Local/Google/Chrome/User Data"). In the "profile-directory" enter the profile part of the path (e.g "Profile 2").
+	 2. Click Add
+	 3. Choose a name and picture
+	 4. With the new profile visit: *chrome://version/*
+	 5. Copy the Profile Path (On Windows, should be something like "C:\Users\User\AppData\Local\Google\Chrome\User 		Data\Profile 2" ). 
+	 6. Modify the config.json file.   In the "user-data-dir" field enter the path from before up to the "User Data" part with escaped backslashes or forward shlashes (e.g 	"C:/Users/User/AppData/Local/Google/Chrome/User Data"). In the "profile-directory" enter the profile part of the path (e.g "Profile 2").
 
  - If you want to get giveaways from reddit, [register](https://www.reddit.com/prefs/apps/) an application. Then fill out the reddit_auth section of the config file.
  
