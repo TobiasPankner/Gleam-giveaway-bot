@@ -12,13 +12,15 @@ if __name__ == '__main__':
     with open('data/entry_types.json') as json_data_file:
         entry_types = json.load(json_data_file)
 
-    reddit.init(config['reddit_auth'])
-    twitter.init(config['twitter_auth'])
+    if config['reddit_auth']['client_id'] != "":
+        reddit.init(config['reddit_auth'])
+        urls_reddit = reddit.get_urls()
+        urls = urls_reddit.copy()
+    else:
+        print("Not using reddit, no details given in the config")
+        urls = []
 
-    urls_reddit = reddit.get_urls()
     urls_gleamlist = scraper.get_urls_gleamlist()
-
-    urls = urls_reddit.copy()
     urls.extend(urls_gleamlist)
 
     print(f"Total links: {len(urls)}")
@@ -43,15 +45,22 @@ if __name__ == '__main__':
 
     print(f"Total links after duplicate removal: {len(urls)}")
 
-    # urls = ["https://gleam.io/yxNtl/follow-authors-on-social-media"]
+    if config['twitter_auth']['consumer_key'] != "":
+        twitter.init(config['twitter_auth'])
+    else:
+        print("Not using twitter, no details given in the config")
 
-    browser_actions.init_driver()
+    browser_actions.init_driver(config['user-data-dir'], config['profile-directory'])
 
     for url in urls:
         browser_actions.get_url(url)
         print(f"\nVisited {url}")
 
         giveaway_info, user_info = browser_actions.get_gleam_info()
+
+        if 'authentications' not in user_info['contestant']:
+            print("Not logged in with name+email")
+            exit(0)
 
         if giveaway_info is None:
             continue

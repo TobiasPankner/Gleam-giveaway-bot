@@ -1,4 +1,7 @@
 {
+  "user-data-dir": "",
+  "profile-directory": "",
+
   "reddit_auth": {
     "client_id": "",
     "client_secret": "",

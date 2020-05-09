@@ -78,13 +78,13 @@ class LocalStorage:
         return self.items().__str__()
 
 
-def init_driver():
+def init_driver(user_data_dir, profile_dir):
     global driver, storage
 
     options = Options()
-    options.add_argument("user-data-dir=C:/Users/Tobias/AppData/Local/Google/Chrome/User Data")
-    options.add_argument("profile-directory=Profile 2")
-    # options.add_experimental_option("detach", True)
+    if user_data_dir != "":
+        options.add_argument(f"user-data-dir={user_data_dir}")
+        options.add_argument(f"profile-directory={profile_dir}")
     driver = webdriver.Chrome(chrome_options=options)
 
     storage = LocalStorage(driver)
