@@ -137,7 +137,7 @@ def make_whitelist(entry_types, user_info):
 
 
 def get_url(url):
-    time.sleep(3)
+    time.sleep(1)
 
     driver.switch_to.default_content()
     driver.get(url)
@@ -227,6 +227,7 @@ def do_giveaway(giveaway_info, whitelist):
         return
 
     for entry_method in entry_methods:
+
         print(f"\tDoing entry method: {entry_method['id']} ({entry_method['entry_type']})")
         try:
             minimize_all_entries()

@@ -46,16 +46,21 @@ def main():
     if not os.path.isfile("data/cookies.pkl") or input("\nBegin [b] Setup [s] ") == 's':
         browser_actions.init_driver(config['user-data-dir'], config['profile-directory'], headless=False)
         browser_actions.get_url("https://gleam.io/examples/competitions/every-entry-type")
+
         input("\nPress any button when finished logging in\n")
+
         browser_actions.save_cookies()
         browser_actions.close_driver()
 
-    print("Starting webdriver in headless mode")
+    utils.start_loading_text("Starting webdriver in headless mode")
     browser_actions.init_driver(config['user-data-dir'], config['profile-directory'])
+    utils.stop_loading_text("Started webdriver in headless mode")
 
     for url in urls:
+        print()
+        utils.start_loading_text(f"Visiting {url}")
         browser_actions.get_url(url)
-        print(f"\nVisited {url}")
+        utils.stop_loading_text(f"Visited {url}")
 
         giveaway_info, user_info = browser_actions.get_gleam_info()
 
@@ -65,6 +70,8 @@ def main():
         if 'authentications' not in user_info['contestant']:
             print("Not logged in with name+email")
             exit(0)
+
+        print(giveaway_info['campaign']['name'])
 
         whitelist = browser_actions.make_whitelist(entry_types, user_info)
 
