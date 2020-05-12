@@ -34,7 +34,7 @@ def loading_text_anim(display_text):
         if anim_stopped:
             break
 
-        string = f"{c}  {display_text}"
+        string = f" {c}  {display_text}"
         sys.stdout.write('\r' + string)
         time.sleep(1)
 

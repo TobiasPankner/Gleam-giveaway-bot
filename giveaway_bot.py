@@ -4,7 +4,8 @@ import re
 
 from src import reddit, browser_actions, twitter, logger, scraper, utils
 
-if __name__ == '__main__':
+
+def main():
     history_ids = logger.read_log("data/history.csv")
 
     with open('config.json') as json_data_file:
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     else:
         print("Not using twitter, no details given in the config")
 
-    if not os.path.isfile("data/cookies.pkl") or input("\nBegin [b] Setup [s]") == 's':
+    if not os.path.isfile("data/cookies.pkl") or input("\nBegin [b] Setup [s] ") == 's':
         browser_actions.init_driver(config['user-data-dir'], config['profile-directory'], headless=False)
         browser_actions.get_url("https://gleam.io/examples/competitions/every-entry-type")
         input("\nPress any button when finished logging in\n")
@@ -79,3 +80,9 @@ if __name__ == '__main__':
 
         logger.write_log("data/history.csv", giveaway_info, user_info)
 
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        utils.stop_loading_text()
