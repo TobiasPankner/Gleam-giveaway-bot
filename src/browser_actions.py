@@ -8,6 +8,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+import pickle
 
 import urllib.parse as urlparse
 from urllib.parse import parse_qs
@@ -78,16 +79,46 @@ class LocalStorage:
         return self.items().__str__()
 
 
-def init_driver(user_data_dir, profile_dir):
+def init_driver(user_data_dir, profile_dir, headless=True):
     global driver, storage
 
     options = Options()
+
+    if headless:
+        options.add_argument("--headless")
+
     if user_data_dir != "":
         options.add_argument(f"user-data-dir={user_data_dir}")
         options.add_argument(f"profile-directory={profile_dir}")
+
     driver = webdriver.Chrome(chrome_options=options)
 
     storage = LocalStorage(driver)
+
+    if headless:
+        get_url("https://gleam.io")
+        load_cookies()
+
+
+def close_driver():
+    global driver, storage
+    driver.quit()
+
+    driver = None
+    storage = None
+
+
+def save_cookies():
+    if driver is not None:
+        pickle.dump(driver.get_cookies(), open("data/cookies.pkl", "wb"))
+
+
+def load_cookies():
+    for cookie in pickle.load(open("data/cookies.pkl", "rb")):
+        if 'expiry' in cookie:
+            del cookie['expiry']
+
+        driver.add_cookie(cookie)
 
 
 def make_whitelist(entry_types, user_info):
@@ -192,10 +223,11 @@ def do_giveaway(giveaway_info, whitelist):
     entry_methods.extend(entry_methods_not_mandatory)
 
     if campaign['finished'] or campaign['paused']:
-        print("Giveaway has ended")
+        print("\tGiveaway has ended")
         return
 
     for entry_method in entry_methods:
+        print(f"\tDoing entry method: {entry_method['id']} ({entry_method['entry_type']})")
         try:
             minimize_all_entries()
         except:

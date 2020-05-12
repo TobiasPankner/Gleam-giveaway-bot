@@ -6,8 +6,6 @@ def get_urls_gleamlist():
     url = 'http://gleamlist.com'
     gleam_urls = []
 
-    print(f"Pulling links from {url}")
-
     for page_num in range(1, 30):
         response = get(f"{url}/index.php?page={page_num}")
 
@@ -21,7 +19,4 @@ def get_urls_gleamlist():
         for url_elem in url_elems:
             gleam_urls.append(url_elem['href'])
 
-        print(f"Found {len(url_elems)} links on page number {page_num}")
-
-    print(f"Pulled {len(gleam_urls)} links from {url}\n")
     return gleam_urls
