@@ -53,7 +53,7 @@ def main():
         browser_actions.close_driver()
 
     utils.start_loading_text("Starting webdriver in headless mode")
-    browser_actions.init_driver(config['user-data-dir'], config['profile-directory'], headless=False)
+    browser_actions.init_driver(config['user-data-dir'], config['profile-directory'])
     utils.stop_loading_text("Started webdriver in headless mode")
 
     for url in urls:
