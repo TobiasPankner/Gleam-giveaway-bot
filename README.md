@@ -38,7 +38,8 @@ To do this:
 ## Running the script
 After the setup above is completed, close all Chrome windows and start the script (`python giveaway_bot.py`). Now the bot will fetch urls from "http://gleamlist.com" and, if you configured it, from "https://www.reddit.com/r/giveaways/".  
 
-Next, a browser window should open. Here you have to login with your various accounts. For this, first click on any visit action like the one below. Finish the action and fill in the required details. This only has to be done once.  
+**On first start:**
+A browser window should open. Here you have to login with your various accounts. For this, first click on any visit action like the one below. Next, finish the action and fill in the required details. 
 
 ![Register](https://imgur.com/4tsJj6U.png)  
 
