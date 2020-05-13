@@ -1,6 +1,8 @@
 
 # Gleam-giveaway-bot
-Python bot to automatically find and complete gleam giveaways.
+Python bot to automatically find and complete gleam giveaways.  
+
+![Demo](https://imgur.com/GE8wlBg.gif)  
 
 ## Warning
 
@@ -32,16 +34,14 @@ To do this:
  - If you want to get giveaways from reddit, [register](https://www.reddit.com/prefs/apps/) an application. Then fill out the reddit_auth section of the config file.
  
  - If you want to complete twitter actions on gleam you have to register for api access [here](https://developer.twitter.com/en/apps). After approval you can fill out the corresponding fields in the config. Again, **do not use your normal twitter account**.
-
-- Login with social media accounts on the Chrome profile you are using. Visit the [gleam example page](https://gleam.io/examples/competitions/every-entry-type) and click on any visit action. Finish the action and enter your name and email.  
-
-![Register](https://imgur.com/4tsJj6U.png)  
-
-  Then click on the "Enter with x" elements and connect the corresponding account. The more social media accounts you use, the more entries will be able to be completed.
   
 ## Running the script
 After the setup above is completed, close all Chrome windows and start the script (`python giveaway_bot.py`). Now the bot will fetch urls from "http://gleamlist.com" and, if you configured it, from "https://www.reddit.com/r/giveaways/".  
 
-After this it will complete as many entries as possible and add the site to history. The history file is saved in the data directory and contains useful information about the completed giveaways.
+Next, a browser window should open. Here you have to login with your various accounts. For this, first click on any visit action like the one below. Finish the action and fill in the required details. This only has to be done once.  
 
+![Register](https://imgur.com/4tsJj6U.png)  
 
+Then click on the "Enter with x" elements and connect the corresponding account. The more social media accounts you use, the more entries will be able to be completed.  
+
+When you are done connecting your accounts press any button and the program will resume.
