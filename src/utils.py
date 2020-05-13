@@ -1,11 +1,11 @@
 import itertools
 import re
-import sys
 import threading
 import time
 
 anim_thread = None
 anim_stopped = False
+
 
 def filter_urls(urls_to_filter, history_ids):
     # remove unnecessary info of the url and ignore previously visited
@@ -35,7 +35,7 @@ def loading_text_anim(display_text):
             break
 
         string = f" {c}  {display_text}"
-        sys.stdout.write('\r' + string)
+        print('\r' + string, end='')
         time.sleep(1)
 
 
@@ -48,11 +48,13 @@ def start_loading_text(progress_text):
     anim_thread.start()
 
 
-def stop_loading_text(finish_text=None):
+def stop_loading_text(finish_text=None, newline=False):
     global anim_stopped
 
     anim_stopped = True
     anim_thread.join()
 
     if finish_text:
-        sys.stdout.write(f'\r{finish_text}\n')
+        print(f'\r{finish_text}                                                      \n', end='')
+    if newline:
+        print("")

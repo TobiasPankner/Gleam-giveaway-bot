@@ -1,6 +1,9 @@
 import json
+import pickle
 import time
+import urllib.parse as urlparse
 from enum import Enum
+from urllib.parse import parse_qs
 
 from selenium import webdriver
 from selenium.common import exceptions
@@ -8,10 +11,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-import pickle
-
-import urllib.parse as urlparse
-from urllib.parse import parse_qs
+import colored
+from colored import stylize
 
 from src import twitter
 
@@ -160,26 +161,26 @@ def get_gleam_info():
 
     try:
         driver.find_element_by_css_selector("img[src='/images/error/404.png']")
-        print("Page doesn't exist")
+        print("\tPage doesn't exist", end='')
         return None, None
     except:
         pass
 
     if cur_url.count("gleam.io") > 0:
-        contestant = wait_till_found("div[ng-controller='EnterController']", 7)
-        campaign = wait_till_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
+        contestant = wait_until_found("div[ng-controller='EnterController']", 7)
+        campaign = wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
 
     # if the info was not found it is probably in an iframe
     if campaign is None:
-        iframe = wait_till_found("iframe[id^='GleamEmbed']", 7)
+        iframe = wait_until_found("iframe[id^='GleamEmbed']", 7)
         if iframe is None:
             return None, None
 
         try:
             driver.switch_to.frame(iframe)
 
-            contestant = wait_till_found("div[ng-controller='EnterController']", 7)
-            campaign = wait_till_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
+            contestant = wait_until_found("div[ng-controller='EnterController']", 7)
+            campaign = wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
 
             if campaign is None:
                 driver.switch_to.default_content()
@@ -205,6 +206,10 @@ def get_gleam_info():
     # add the number of total entries to the dict
     campaign_info_json['total_entries'] = entry_count
 
+    if not contestant_info_json['location_allowed']:
+        print("\tNot available in your country", end='')
+        return None, None
+
     return campaign_info_json, contestant_info_json
 
 
@@ -227,16 +232,15 @@ def do_giveaway(giveaway_info, whitelist):
         return
 
     for entry_method in entry_methods:
-
-        print(f"\tDoing entry method: {entry_method['id']} ({entry_method['entry_type']})")
+        entry_method_str = f"entry method: {entry_method['id']} ({entry_method['entry_type']})"
+        print(f"\n\tDoing {entry_method_str})", end='')
         try:
             minimize_all_entries()
         except:
             return
 
-        # input("press")
-
         if entry_method['entry_type'] not in whitelist:
+            print('\r' + stylize("\tIgnored " + entry_method_str + "                        ", colored.fg("grey_46")), end='')
             continue
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
@@ -249,18 +253,33 @@ def do_giveaway(giveaway_info, whitelist):
             except exceptions.ElementClickInterceptedException:
                 continue
 
-        elif state == EntryStates.COMPLETED or state == EntryStates.HIDDEN:
+        elif state == EntryStates.COMPLETED:
+            if state == EntryStates.COMPLETED:
+                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")), end='')
+            else:
+                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")), end='')
             continue
 
-        time.sleep(1.5)
+        elif state == EntryStates.HIDDEN:
+            print('\r' + stylize("\tCouldn't see " + entry_method_str + "                        ", colored.fg("grey_46")), end='')
+            continue
 
-        to_revisit = do_entry(entry_method_elem, entry_method['entry_type'], entry_method['id'])
-        if to_revisit is True:
-            elems_to_revisit.append(entry_method['id'])
+        wait_until_loaded(entry_method['id'])
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
             continue
+
+        if state == EntryStates.COMPLETED:
+            if state == EntryStates.COMPLETED:
+                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")), end='')
+            else:
+                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")), end='')
+            continue
+
+        to_revisit = do_entry(entry_method_elem, entry_method['entry_type'], entry_method['id'])
+        if to_revisit is True:
+            elems_to_revisit.append(entry_method['id'])
 
         cont_btn = get_continue_elem(entry_method_elem)
         if cont_btn is None:
@@ -271,8 +290,21 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             pass
 
+        wait_until_loaded(entry_method['id'])
+
+        entry_method_elem, state = get_entry_elem(entry_method['id'])
+        if entry_method_elem is None:
+            continue
+
+        if state == EntryStates.COMPLETED:
+            print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")), end='')
+        elif to_revisit:
+            print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("yellow")), end='')
+        else:
+            print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")), end='')
+
         driver.switch_to.window(main_window)
-        time.sleep(1)
+        time.sleep(0.5)
 
     if len(elems_to_revisit) == 0:
         return None
@@ -296,11 +328,16 @@ def do_giveaway(giveaway_info, whitelist):
         else:
             continue
 
-        time.sleep(1)
+        wait_until_loaded(entry_method_id)
 
         cont_btn = get_continue_elem(entry_method_elem)
         if cont_btn is None:
             continue
+
+        try:
+            cont_btn.click()
+        except:
+            pass
 
         time.sleep(0.5)
 
@@ -426,9 +463,9 @@ def do_entry(entry_method_elem, entry_type, entry_id):
         time.sleep(6)
 
 
-def get_entry_elem(id):
+def get_entry_elem(entry_id):
     try:
-        entry_method_elem = driver.find_element_by_css_selector(f"div[class^='entry-method'][id='em{id}']")
+        entry_method_elem = driver.find_element_by_css_selector(f"div[class^='entry-method'][id='em{entry_id}']")
     except:
         return None, None
 
@@ -447,6 +484,10 @@ def get_entry_elem(id):
         state = EntryStates.DEFAULT
 
     return entry_method_elem, state
+
+
+def wait_until_loaded(entry_id):
+    wait_until_found(f"div.entry-method[id='em{entry_id}']>a:not(.loading)", 3)
 
 
 def get_continue_elem(parent_elem):
@@ -475,7 +516,7 @@ def minimize_all_entries():
         entry_method_elem.click()
 
 
-def wait_till_found(sel, timeout):
+def wait_until_found(sel, timeout):
     try:
         element_present = EC.presence_of_element_located((By.CSS_SELECTOR, sel))
         WebDriverWait(driver, timeout).until(element_present)

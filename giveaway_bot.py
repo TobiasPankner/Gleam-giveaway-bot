@@ -28,15 +28,15 @@ def main():
 
     utils.start_loading_text("Getting urls from http://gleamlist.com")
     urls_gleamlist = scraper.get_urls_gleamlist()
-    utils.stop_loading_text(f"Got {len(urls_gleamlist)} urls from http://gleamlist.com\n")
+    utils.stop_loading_text(f"Got {len(urls_gleamlist)} urls from http://gleamlist.com", newline=True)
 
     urls.extend(urls_gleamlist)
 
-    print(f"Total urls:\t\t\t\t\t{len(urls)}")
+    print(f"Total urls: {len(urls)}")
 
     urls = utils.filter_urls(urls, history_ids)
 
-    print(f"After duplicate removal:\t{len(urls)}")
+    print(f"After duplicate removal: {len(urls)}")
 
     if config['twitter_auth']['consumer_key'] != "":
         twitter.init(config['twitter_auth'])
@@ -53,11 +53,11 @@ def main():
         browser_actions.close_driver()
 
     utils.start_loading_text("Starting webdriver in headless mode")
-    browser_actions.init_driver(config['user-data-dir'], config['profile-directory'])
+    browser_actions.init_driver(config['user-data-dir'], config['profile-directory'], headless=False)
     utils.stop_loading_text("Started webdriver in headless mode")
 
     for url in urls:
-        print()
+        print("\n")
         utils.start_loading_text(f"Visiting {url}")
         browser_actions.get_url(url)
         utils.stop_loading_text(f"Visited {url}")
@@ -71,7 +71,7 @@ def main():
             print("Not logged in with name+email")
             exit(0)
 
-        print(giveaway_info['campaign']['name'])
+        print(giveaway_info['campaign']['name'], end='')
 
         whitelist = browser_actions.make_whitelist(entry_types, user_info)
 
@@ -93,3 +93,8 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         utils.stop_loading_text()
+    except Exception as e:
+        utils.stop_loading_text()
+        print(e)
+
+        exit(-1)
