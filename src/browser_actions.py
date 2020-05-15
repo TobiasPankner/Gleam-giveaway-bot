@@ -84,6 +84,7 @@ def init_driver(user_data_dir, profile_dir, headless=True):
     global driver, storage
 
     options = Options()
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     if headless:
         options.add_argument("--headless")
@@ -228,7 +229,7 @@ def do_giveaway(giveaway_info, whitelist):
     entry_methods.extend(entry_methods_not_mandatory)
 
     if campaign['finished'] or campaign['paused']:
-        print("\tGiveaway has ended")
+        print("\n\tGiveaway has ended")
         return
 
     for entry_method in entry_methods:

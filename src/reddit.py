@@ -1,3 +1,4 @@
+import itertools
 import re
 
 import praw
@@ -17,16 +18,10 @@ def get_urls():
     urls = []
 
     subreddit = reddit.subreddit('giveaways')
-    submissions_top = subreddit.top(time_filter='week', limit=100)
-    submissions_new = subreddit.new(limit=None)
+    submissions_top = subreddit.search("flair:'gleam'", sort='top', time_filter='week')
+    submissions_new = subreddit.search("flair:'gleam'", sort='new')
 
-    for submission in submissions_top:
-        url = submission.url
-        title = submission.title
-        if (re.search('{WW}|{\?\?}|{ww}|{Ww}', title) or title.count('{') == 0) and url.count('https://gleam.io/') > 0:
-            urls.append(url)
-
-    for submission in submissions_new:
+    for submission in itertools.chain(submissions_top, submissions_new):
         url = submission.url
         title = submission.title
         if (re.search('{WW}|{\?\?}|{ww}|{Ww}', title) or title.count('{') == 0) and url.count('https://gleam.io/') > 0:

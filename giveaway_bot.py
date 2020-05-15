@@ -1,6 +1,5 @@
 import json
 import os
-import re
 
 from src import reddit, browser_actions, twitter, logger, scraper, utils
 

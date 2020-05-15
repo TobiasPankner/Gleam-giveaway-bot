@@ -1,6 +1,7 @@
+colored==1.4.2
+requests_toolbelt==0.9.1
 requests==2.23.0
+tweepy==3.8.0
 praw==7.0.0
 selenium==3.141.0
-tweepy==3.8.0
-colored==1.4.2
 beautifulsoup4==4.9.0
