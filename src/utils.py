@@ -48,7 +48,7 @@ def start_loading_text(progress_text):
     anim_thread.start()
 
 
-def stop_loading_text(finish_text=None, newline=False):
+def stop_loading_text(finish_text=None):
     global anim_stopped
 
     anim_stopped = True
@@ -56,5 +56,3 @@ def stop_loading_text(finish_text=None, newline=False):
 
     if finish_text:
         print(f'\r{finish_text}                                                      \n', end='')
-    if newline:
-        print("")

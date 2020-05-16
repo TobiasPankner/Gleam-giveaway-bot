@@ -27,11 +27,11 @@ def main():
 
     utils.start_loading_text("Getting urls from http://gleamlist.com")
     urls_gleamlist = scraper.get_urls_gleamlist()
-    utils.stop_loading_text(f"Got {len(urls_gleamlist)} urls from http://gleamlist.com", newline=True)
+    utils.stop_loading_text(f"Got {len(urls_gleamlist)} urls from http://gleamlist.com")
 
     urls.extend(urls_gleamlist)
 
-    print(f"Total urls: {len(urls)}")
+    print(f"\nTotal urls: {len(urls)}")
 
     urls = utils.filter_urls(urls, history_ids)
 
@@ -90,10 +90,5 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except KeyboardInterrupt:
+    finally:
         utils.stop_loading_text()
-    except Exception as e:
-        utils.stop_loading_text()
-        print(e)
-
-        exit(-1)

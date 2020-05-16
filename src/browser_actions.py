@@ -139,7 +139,7 @@ def make_whitelist(entry_types, user_info):
 
 
 def get_url(url):
-    time.sleep(1)
+    # time.sleep(1)
 
     driver.switch_to.default_content()
     driver.get(url)
@@ -214,6 +214,20 @@ def get_gleam_info():
     return campaign_info_json, contestant_info_json
 
 
+def create_entry_method_strings(entry_method):
+    entry_method_str = f"entry method: {entry_method['id']} ({entry_method['entry_type']})"
+    strings = {
+        "default_str": entry_method_str,
+        "success_str": '\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")),
+        "fail_str": '\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")),
+        "ignored_str": '\r' + stylize("\tIgnored " + entry_method_str + "                        ", colored.fg("grey_46")),
+        "couldnt_see_str": '\r' + stylize("\tCouldn't see " + entry_method_str + "                        ", colored.fg("grey_46")),
+        "will_revisit_str": '\r' + stylize("\tWill revisit " + entry_method_str + "                        ", colored.fg("yellow"))
+    }
+
+    return strings
+
+
 def do_giveaway(giveaway_info, whitelist):
     main_window = driver.current_window_handle
     elems_to_revisit = []
@@ -233,15 +247,16 @@ def do_giveaway(giveaway_info, whitelist):
         return
 
     for entry_method in entry_methods:
-        entry_method_str = f"entry method: {entry_method['id']} ({entry_method['entry_type']})"
-        print(f"\n\tDoing {entry_method_str})", end='')
+        entry_method_strings = create_entry_method_strings(entry_method)
+
+        print(f"\n\tDoing {entry_method_strings['default_str']})", end='')
         try:
             minimize_all_entries()
         except:
             return
 
         if entry_method['entry_type'] not in whitelist:
-            print('\r' + stylize("\tIgnored " + entry_method_str + "                        ", colored.fg("grey_46")), end='')
+            print(entry_method_strings['ignored_str'], end='')
             continue
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
@@ -256,13 +271,13 @@ def do_giveaway(giveaway_info, whitelist):
 
         elif state == EntryStates.COMPLETED:
             if state == EntryStates.COMPLETED:
-                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")), end='')
+                print(entry_method_strings['success_str'], end='')
             else:
-                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")), end='')
+                print(entry_method_strings['fail_str'], end='')
             continue
 
         elif state == EntryStates.HIDDEN:
-            print('\r' + stylize("\tCouldn't see " + entry_method_str + "                        ", colored.fg("grey_46")), end='')
+            print(entry_method_strings['couldnt_see_str'], end='')
             continue
 
         wait_until_loaded(entry_method['id'])
@@ -273,14 +288,15 @@ def do_giveaway(giveaway_info, whitelist):
 
         if state == EntryStates.COMPLETED:
             if state == EntryStates.COMPLETED:
-                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")), end='')
+                print(entry_method_strings['success_str'], end='')
             else:
-                print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")), end='')
+                print(entry_method_strings['fail_str'], end='')
             continue
 
         to_revisit = do_entry(entry_method_elem, entry_method['entry_type'], entry_method['id'])
-        if to_revisit is True:
-            elems_to_revisit.append(entry_method['id'])
+
+        if to_revisit:
+            elems_to_revisit.append(entry_method)
 
         cont_btn = get_continue_elem(entry_method_elem)
         if cont_btn is None:
@@ -298,26 +314,31 @@ def do_giveaway(giveaway_info, whitelist):
             continue
 
         if state == EntryStates.COMPLETED:
-            print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")), end='')
+            print(entry_method_strings['success_str'], end='')
         elif to_revisit:
-            print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("yellow")), end='')
+            print(entry_method_strings['will_revisit_str'], end='')
         else:
-            print('\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")), end='')
+            print(entry_method_strings['fail_str'], end='')
 
         driver.switch_to.window(main_window)
-        time.sleep(0.5)
+        time.sleep(0.2)
 
     if len(elems_to_revisit) == 0:
-        return None
+        return
 
+    print("\n\n\tRevisiting some entry methods:", end='')
     refresh()
-    for entry_method_id in elems_to_revisit:
+    for entry_method in elems_to_revisit:
+        entry_method_strings = create_entry_method_strings(entry_method)
+
+        print(f"\t\nDoing {entry_method_strings['default_str']})", end='')
+
         try:
             minimize_all_entries()
         except:
             return
 
-        entry_method_elem, state = get_entry_elem(entry_method_id)
+        entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
             continue
 
@@ -326,10 +347,12 @@ def do_giveaway(giveaway_info, whitelist):
                 entry_method_elem.click()
             except exceptions.ElementClickInterceptedException:
                 continue
+        elif state is EntryStates.COMPLETED:
+            print(entry_method_strings['success_str'], end='')
         else:
             continue
 
-        wait_until_loaded(entry_method_id)
+        wait_until_loaded(entry_method['id'])
 
         cont_btn = get_continue_elem(entry_method_elem)
         if cont_btn is None:
@@ -340,9 +363,18 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             pass
 
-        time.sleep(0.5)
+        wait_until_loaded(entry_method['id'])
 
-    return None
+        entry_method_elem, state = get_entry_elem(entry_method['id'])
+        if entry_method_elem is None:
+            continue
+
+        if state == EntryStates.COMPLETED:
+            print(entry_method_strings['success_str'], end='')
+        else:
+            print(entry_method_strings['fail_str'], end='')
+
+        time.sleep(0.5)
 
 
 def do_entry(entry_method_elem, entry_type, entry_id):
@@ -357,8 +389,6 @@ def do_entry(entry_method_elem, entry_type, entry_id):
 
         twitter.follow(name)
 
-        time.sleep(1)
-
     elif entry_type == 'twitter_retweet':
         try:
             retweet_elem = entry_method_elem.find_element_by_css_selector(
@@ -369,8 +399,6 @@ def do_entry(entry_method_elem, entry_type, entry_id):
         tweet_id = retweet_elem.get_attribute("data-tweet-id")
 
         twitter.retweet(tweet_id)
-
-        time.sleep(1)
 
     elif entry_type == 'twitter_tweet':
         try:
@@ -388,8 +416,6 @@ def do_entry(entry_method_elem, entry_type, entry_id):
         text = text[0]
 
         twitter.tweet(text)
-
-        time.sleep(1)
 
     elif entry_type == 'twitter_hashtags':
         try:
@@ -424,8 +450,6 @@ def do_entry(entry_method_elem, entry_type, entry_id):
         except:
             pass
 
-        time.sleep(1)
-
     elif entry_type.count("visit") > 0 or entry_type == 'custom_action':
         millis = int(round(time.time() * 1000))
 
@@ -437,14 +461,11 @@ def do_entry(entry_method_elem, entry_type, entry_id):
             timer_elem = entry_method_elem.find_element_by_css_selector("span[ng-hide^='!(isTimerAction']")
 
             if timer_elem.text.count("NaN") == 0 and timer_elem.text != "":
-
-                storage[f"T-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":1}},\"v\":{int(time.time()-300)}}}"
+                storage[f"T-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":1}},\"v\":{int(time.time() - 300)}}}"
 
                 return True
         except exceptions.NoSuchElementException:
             pass
-
-        time.sleep(1)
 
     elif entry_type == 'loyalty':
         try:
@@ -457,8 +478,6 @@ def do_entry(entry_method_elem, entry_type, entry_id):
             claim_elem.click()
         except exceptions.ElementNotInteractableException:
             return
-
-        time.sleep(1)
 
     elif entry_type == 'instagram_view_post' or entry_type == 'twitter_view_post' or entry_type == 'facebook_view_post':
         time.sleep(6)
@@ -488,7 +507,7 @@ def get_entry_elem(entry_id):
 
 
 def wait_until_loaded(entry_id):
-    wait_until_found(f"div.entry-method[id='em{entry_id}']>a:not(.loading)", 3)
+    wait_until_found(f"div.entry-method[id='em{entry_id}']>a:not(.loading)", 4)
 
 
 def get_continue_elem(parent_elem):
