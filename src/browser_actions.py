@@ -331,7 +331,7 @@ def do_giveaway(giveaway_info, whitelist):
     for entry_method in elems_to_revisit:
         entry_method_strings = create_entry_method_strings(entry_method)
 
-        print(f"\t\nDoing {entry_method_strings['default_str']})", end='')
+        print(f"\n\tDoing {entry_method_strings['default_str']})", end='')
 
         try:
             minimize_all_entries()
