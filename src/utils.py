@@ -7,18 +7,24 @@ anim_thread = None
 anim_stopped = False
 
 
-def filter_urls(urls_to_filter, history_ids):
+def extract_id_from_url(url):
+    id_match = re.search(r"\w+/(\w{5})[/-]", url)
+    if not id_match:
+        return None
+
+    return id_match.group(1)
+
+
+def filter_urls(urls_to_filter, history_ids, error_ids):
     # remove unnecessary info of the url and ignore previously visited
     for i, url in enumerate(urls_to_filter):
-        id_re = re.search(r"\w+/(\w{5})[/-]", url)
-        if not id_re:
+        id_str = extract_id_from_url(url)
+        if not id_str:
             urls_to_filter[i] = ""
             continue
 
-        id_str = id_re.group(1)
-
         new_url = f"https://gleam.io/{id_str}/a"
-        if id_str not in history_ids:
+        if id_str not in history_ids and id_str not in error_ids:
             urls_to_filter[i] = new_url
         else:
             urls_to_filter[i] = ""

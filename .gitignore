@@ -202,4 +202,5 @@ venv
 .idea/
 debug.log
 history.csv
+errors.csv
 cookies.pkl

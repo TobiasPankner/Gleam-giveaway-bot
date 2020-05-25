@@ -6,6 +6,7 @@ from src import reddit, browser_actions, twitter, logger, scraper, utils
 
 def main():
     history_ids = logger.read_log("data/history.csv")
+    error_ids = logger.read_log("data/errors.csv")
 
     with open('config.json') as json_data_file:
         config = json.load(json_data_file)
@@ -33,7 +34,7 @@ def main():
 
     print(f"\nTotal urls: {len(urls)}")
 
-    urls = utils.filter_urls(urls, history_ids)
+    urls = utils.filter_urls(urls, history_ids, error_ids)
 
     print(f"After duplicate removal: {len(urls)}")
 
@@ -64,6 +65,7 @@ def main():
         giveaway_info, user_info = browser_actions.get_gleam_info()
 
         if giveaway_info is None:
+            logger.write_error("data/errors.csv", url)
             continue
 
         if 'authentications' not in user_info['contestant']:

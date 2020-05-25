@@ -1,5 +1,8 @@
 import csv
 import os
+import time
+
+from src.utils import extract_id_from_url
 
 
 def write_log(filename, giveaway_info, user_info):
@@ -47,3 +50,24 @@ def read_log(filename):
             id_set.add(row['id'])
 
     return id_set
+
+
+def write_error(filename, url):
+    id_str = extract_id_from_url(url)
+    timestamp = int(time.time())
+
+    write_header = False if os.path.isfile(filename) else True
+
+    with open(filename, 'a', newline='') as csvfile:
+        fieldnames = ['id', 'timestamp']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
+
+        if write_header:
+            writer.writeheader()
+
+        writer.writerow({'id': id_str,
+                         'timestamp': str(timestamp)
+                         }
+                        )
+
+    return None
