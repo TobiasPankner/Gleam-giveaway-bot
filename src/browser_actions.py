@@ -139,16 +139,8 @@ def make_whitelist(entry_types, user_info):
 
 
 def get_url(url):
-    # time.sleep(1)
-
     driver.switch_to.default_content()
     driver.get(url)
-
-
-def open_in_new_tab(url):
-    driver.execute_script("window.open('{}');".format(url))
-    handles = driver.window_handles
-    driver.switch_to.window(handles[len(handles) - 1])
 
 
 def refresh():
