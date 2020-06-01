@@ -47,13 +47,10 @@ def main():
     else:
         print("Not using twitter, no details given in the config")
 
-    print("")
-    utils.start_loading_text("Starting webdriver in headless mode")
     browser.init_driver(config['user-data-dir'], config['profile-directory'], load_cookies_url="https://gleam.io")
-    utils.stop_loading_text("Started webdriver in headless mode")
 
     for url in urls:
-        print("\n")
+        print()
         utils.start_loading_text(f"Visiting {url}")
         browser.get_url(url)
         utils.stop_loading_text(f"Visited {url}")

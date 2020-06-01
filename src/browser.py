@@ -6,7 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
+from webdriver_manager.chrome import ChromeDriverManager
 
 driver: webdriver.Chrome = None
 storage = None
@@ -77,7 +77,7 @@ def init_driver(user_data_dir, profile_dir, headless=True, load_cookies_url=None
         options.add_argument(f"user-data-dir={user_data_dir}")
         options.add_argument(f"profile-directory={profile_dir}")
 
-    driver = webdriver.Chrome(chrome_options=options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options)
 
     storage = LocalStorage(driver)
 
