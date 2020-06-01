@@ -1,4 +1,5 @@
 
+
 # Gleam-giveaway-bot
 [![GitHub stars](https://img.shields.io/github/stars/TobiasPankner/Gleam-giveaway-bot.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/TobiasPankner/Gleam-giveaway-bot/stargazers/)  
 
@@ -36,15 +37,13 @@ To do this:
  - If you want to get giveaways from reddit, [register](https://www.reddit.com/prefs/apps/) an application. Then fill out the reddit_auth section of the config file.
  
  - If you want to complete twitter actions on gleam you have to register for api access [here](https://developer.twitter.com/en/apps). After approval you can fill out the corresponding fields in the config. Again, **do not use your normal twitter account**.
+ 
+- To sign in with your various account run the setup script (`python setup.py`). This will open a browser window. First, click on any visit action like the one below. Next, finish the action and fill in the required details.  
+  
+  ![Register](https://imgur.com/4tsJj6U.png)  
+Then click on the "Enter with x" elements and connect the corresponding account. The more social media accounts you use, the more entries will be able to be completed.  
+  
+  When you are done connecting your accounts press any button and the setup is finished.
   
 ## Running the script
-After the setup above is completed, close all Chrome windows and start the script (`python giveaway_bot.py`). Now the bot will fetch urls from "http://gleamlist.com" and, if you configured it, from "https://www.reddit.com/r/giveaways/".  
-
-**On first start:**
-A browser window should open. Here you have to login with your various accounts. For this, first click on any visit action like the one below. Next, finish the action and fill in the required details. 
-
-![Register](https://imgur.com/4tsJj6U.png)  
-
-Then click on the "Enter with x" elements and connect the corresponding account. The more social media accounts you use, the more entries will be able to be completed.  
-
-When you are done connecting your accounts press any button and the program will resume.
+After the setup above is completed, start the script (`python giveaway_bot.py`). Now the bot will fetch urls from "http://gleamlist.com" and, if you configured it, from "https://www.reddit.com/r/giveaways/".
