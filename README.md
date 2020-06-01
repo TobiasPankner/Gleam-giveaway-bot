@@ -1,5 +1,7 @@
 
 # Gleam-giveaway-bot
+[![GitHub stars](https://img.shields.io/github/stars/TobiasPankner/Gleam-giveaway-bot.svg?style=social&label=Star&maxAge=2592000)](https://GitHub.com/TobiasPankner/Gleam-giveaway-bot/stargazers/)  
+
 Python bot to automatically find and complete gleam giveaways.  
 
 ![Demo](https://imgur.com/GE8wlBg.gif)  
