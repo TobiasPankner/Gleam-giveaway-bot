@@ -58,7 +58,8 @@ def stop_loading_text(finish_text=None):
     global anim_stopped
 
     anim_stopped = True
-    anim_thread.join()
+    if anim_thread:
+        anim_thread.join()
 
-    if finish_text:
-        print(f'\r{finish_text}                                                      \n', end='')
+        if finish_text:
+            print(f'\r{finish_text}                                                      \n', end='')

@@ -1,23 +1,14 @@
 import json
-import pickle
 import time
 import urllib.parse as urlparse
 from enum import Enum
 from urllib.parse import parse_qs
 
-from selenium import webdriver
-from selenium.common import exceptions
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 import colored
 from colored import stylize
+from selenium.common import exceptions
 
-from src import twitter
-
-driver: webdriver.Chrome = None
-storage = None
+from src import twitter, browser
 
 
 class EntryStates(Enum):
@@ -25,102 +16,6 @@ class EntryStates(Enum):
     EXPANDED = 1
     COMPLETED = 2
     HIDDEN = 3
-
-
-class LocalStorage:
-
-    def __init__(self, driver):
-        self.driver = driver
-
-    def __len__(self):
-        return self.driver.execute_script("return window.localStorage.length;")
-
-    def items(self):
-        return self.driver.execute_script(
-            "var ls = window.localStorage, items = {}; ""for (var i = 0, k; i < ls.length; ++i) ""  items[k = ls.key(i)] = ls.getItem(k); ""return items; ")
-
-    def keys(self):
-        return self.driver.execute_script(
-            "var ls = window.localStorage, keys = []; "
-            "for (var i = 0; i < ls.length; ++i) "
-            "  keys[i] = ls.key(i); "
-            "return keys; ")
-
-    def get(self, key):
-        return self.driver.execute_script("return window.localStorage.getItem(arguments[0]);", key)
-
-    def set(self, key, value):
-        self.driver.execute_script("window.localStorage.setItem(arguments[0], arguments[1]);", key, value)
-
-    def has(self, key):
-        return key in self.keys()
-
-    def remove(self, key):
-        self.driver.execute_script("window.localStorage.removeItem(arguments[0]);", key)
-
-    def clear(self):
-        self.driver.execute_script("window.localStorage.clear();")
-
-    def __getitem__(self, key):
-        value = self.get(key)
-        if value is None:
-            raise KeyError(key)
-        return value
-
-    def __setitem__(self, key, value):
-        self.set(key, value)
-
-    def __contains__(self, key):
-        return key in self.keys()
-
-    def __iter__(self):
-        return self.items().__iter__()
-
-    def __repr__(self):
-        return self.items().__str__()
-
-
-def init_driver(user_data_dir, profile_dir, headless=True):
-    global driver, storage
-
-    options = Options()
-    options.add_experimental_option('excludeSwitches', ['enable-logging'])
-
-    if headless:
-        options.add_argument("--headless")
-
-    if user_data_dir != "":
-        options.add_argument(f"user-data-dir={user_data_dir}")
-        options.add_argument(f"profile-directory={profile_dir}")
-
-    driver = webdriver.Chrome(chrome_options=options)
-
-    storage = LocalStorage(driver)
-
-    if headless:
-        get_url("https://gleam.io")
-        load_cookies()
-
-
-def close_driver():
-    global driver, storage
-    driver.quit()
-
-    driver = None
-    storage = None
-
-
-def save_cookies():
-    if driver is not None:
-        pickle.dump(driver.get_cookies(), open("data/cookies.pkl", "wb"))
-
-
-def load_cookies():
-    for cookie in pickle.load(open("data/cookies.pkl", "rb")):
-        if 'expiry' in cookie:
-            del cookie['expiry']
-
-        driver.add_cookie(cookie)
 
 
 def make_whitelist(entry_types, user_info):
@@ -138,45 +33,29 @@ def make_whitelist(entry_types, user_info):
     return whitelist
 
 
-def get_url(url):
-    driver.switch_to.default_content()
-    driver.get(url)
-
-
-def refresh():
-    driver.refresh()
-
-
-def get_gleam_info():
-    cur_url = driver.current_url
-    campaign = None
-    contestant = None
-
-    try:
-        driver.find_element_by_css_selector("img[src='/images/error/404.png']")
+def get_info():
+    not_found_elem = browser.get_elem_by_css("img[src='/images/error/404.png']")
+    if not_found_elem:
         print("\tPage doesn't exist", end='')
         return None, None
-    except:
-        pass
 
-    if cur_url.count("gleam.io") > 0:
-        contestant = wait_until_found("div[ng-controller='EnterController']", 7)
-        campaign = wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
+    contestant = browser.wait_until_found("div[ng-controller='EnterController']", 7)
+    campaign = browser.wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
 
     # if the info was not found it is probably in an iframe
     if campaign is None:
-        iframe = wait_until_found("iframe[id^='GleamEmbed']", 7)
+        iframe = browser.wait_until_found("iframe[id^='GleamEmbed']", 7)
         if iframe is None:
             return None, None
 
         try:
-            driver.switch_to.frame(iframe)
+            browser.driver.switch_to.frame(iframe)
 
-            contestant = wait_until_found("div[ng-controller='EnterController']", 7)
-            campaign = wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
+            contestant = browser.wait_until_found("div[ng-controller='EnterController']", 7)
+            campaign = browser.wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
 
             if campaign is None:
-                driver.switch_to.default_content()
+                browser.driver.switch_to.default_content()
                 return None, None
 
         except exceptions.NoSuchFrameException:
@@ -221,12 +100,12 @@ def create_entry_method_strings(entry_method):
 
 
 def do_giveaway(giveaway_info, whitelist):
-    main_window = driver.current_window_handle
+    main_window = browser.driver.current_window_handle
     elems_to_revisit = []
     campaign = giveaway_info['campaign']
     entry_methods = giveaway_info['entry_methods']
 
-    storage.clear()
+    browser.storage.clear()
 
     # put the mandatory entry methods first
     entry_methods_not_mandatory = [entry_method for entry_method in entry_methods if not entry_method['mandatory']]
@@ -272,7 +151,7 @@ def do_giveaway(giveaway_info, whitelist):
             print(entry_method_strings['couldnt_see_str'], end='')
             continue
 
-        wait_until_loaded(entry_method['id'])
+        wait_until_entry_loaded(entry_method['id'])
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
@@ -299,7 +178,7 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             pass
 
-        wait_until_loaded(entry_method['id'])
+        wait_until_entry_loaded(entry_method['id'])
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
@@ -312,14 +191,14 @@ def do_giveaway(giveaway_info, whitelist):
         else:
             print(entry_method_strings['fail_str'], end='')
 
-        driver.switch_to.window(main_window)
+        browser.driver.switch_to.window(main_window)
         time.sleep(0.2)
 
     if len(elems_to_revisit) == 0:
         return
 
     print("\n\n\tRevisiting some entry methods:", end='')
-    refresh()
+    browser.refresh()
     for entry_method in elems_to_revisit:
         entry_method_strings = create_entry_method_strings(entry_method)
 
@@ -344,7 +223,7 @@ def do_giveaway(giveaway_info, whitelist):
         else:
             continue
 
-        wait_until_loaded(entry_method['id'])
+        wait_until_entry_loaded(entry_method['id'])
 
         cont_btn = get_continue_elem(entry_method_elem)
         if cont_btn is None:
@@ -355,7 +234,7 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             pass
 
-        wait_until_loaded(entry_method['id'])
+        wait_until_entry_loaded(entry_method['id'])
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
@@ -446,14 +325,14 @@ def do_entry(entry_method_elem, entry_type, entry_id):
         millis = int(round(time.time() * 1000))
 
         # set a storage entry to fake a visit
-        storage[f"D-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":7}},\"v\":\"V\"}}"
+        browser.storage[f"D-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":7}},\"v\":\"V\"}}"
 
         # if there is a minimum time on the entry set another storage entry
         try:
             timer_elem = entry_method_elem.find_element_by_css_selector("span[ng-hide^='!(isTimerAction']")
 
             if timer_elem.text.count("NaN") == 0 and timer_elem.text != "":
-                storage[f"T-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":1}},\"v\":{int(time.time() - 300)}}}"
+                browser.storage[f"T-{entry_id}"] = f"{{\"c\":{millis},\"o\":{{\"expires\":1}},\"v\":{int(time.time() - 300)}}}"
 
                 return True
         except exceptions.NoSuchElementException:
@@ -476,9 +355,8 @@ def do_entry(entry_method_elem, entry_type, entry_id):
 
 
 def get_entry_elem(entry_id):
-    try:
-        entry_method_elem = driver.find_element_by_css_selector(f"div[class^='entry-method'][id='em{entry_id}']")
-    except:
+    entry_method_elem = browser.get_elem_by_css(f"div[class^='entry-method'][id='em{entry_id}']")
+    if not entry_method_elem:
         return None, None
 
     state = entry_method_elem.get_attribute('class')
@@ -498,8 +376,8 @@ def get_entry_elem(entry_id):
     return entry_method_elem, state
 
 
-def wait_until_loaded(entry_id):
-    wait_until_found(f"div.entry-method[id='em{entry_id}']>a:not(.loading)", 4)
+def wait_until_entry_loaded(entry_id):
+    browser.wait_until_found(f"div.entry-method[id='em{entry_id}']>a:not(.loading)", 4)
 
 
 def get_continue_elem(parent_elem):
@@ -523,17 +401,6 @@ def get_continue_elem(parent_elem):
 
 
 def minimize_all_entries():
-    entry_method_elems = driver.find_elements_by_css_selector("div[class^='entry-method'][class*='expanded']")
+    entry_method_elems = browser.get_elems_by_css("div[class^='entry-method'][class*='expanded']")
     for entry_method_elem in entry_method_elems:
         entry_method_elem.click()
-
-
-def wait_until_found(sel, timeout):
-    try:
-        element_present = EC.presence_of_element_located((By.CSS_SELECTOR, sel))
-        WebDriverWait(driver, timeout).until(element_present)
-
-        return driver.find_element_by_css_selector(sel)
-    except exceptions.TimeoutException:
-        print(f"Timeout waiting for element. ({sel})")
-        return None

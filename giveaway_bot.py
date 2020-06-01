@@ -1,10 +1,14 @@
 import json
 import os
 
-from src import reddit, browser_actions, twitter, logger, scraper, utils
+from src import reddit, gleam, twitter, logger, scraper, utils, browser
 
 
 def main():
+    if not os.path.isfile("data/cookies.pkl"):
+        print("Did not find a authentication cookies file, please run setup.py first")
+        exit(0)
+
     history_ids = logger.read_log("data/history.csv")
     error_ids = logger.read_log("data/errors.csv")
 
@@ -43,26 +47,18 @@ def main():
     else:
         print("Not using twitter, no details given in the config")
 
-    if not os.path.isfile("data/cookies.pkl") or input("\nBegin [b] Setup [s] ") == 's':
-        browser_actions.init_driver(config['user-data-dir'], config['profile-directory'], headless=False)
-        browser_actions.get_url("https://gleam.io/examples/competitions/every-entry-type")
-
-        input("\nPress any button when finished logging in\n")
-
-        browser_actions.save_cookies()
-        browser_actions.close_driver()
-
+    print("")
     utils.start_loading_text("Starting webdriver in headless mode")
-    browser_actions.init_driver(config['user-data-dir'], config['profile-directory'])
+    browser.init_driver(config['user-data-dir'], config['profile-directory'], load_cookies_url="https://gleam.io")
     utils.stop_loading_text("Started webdriver in headless mode")
 
     for url in urls:
         print("\n")
         utils.start_loading_text(f"Visiting {url}")
-        browser_actions.get_url(url)
+        browser.get_url(url)
         utils.stop_loading_text(f"Visited {url}")
 
-        giveaway_info, user_info = browser_actions.get_gleam_info()
+        giveaway_info, user_info = gleam.get_info()
 
         if giveaway_info is None:
             logger.write_error("data/errors.csv", url)
@@ -74,15 +70,16 @@ def main():
 
         print(giveaway_info['campaign']['name'], end='')
 
-        whitelist = browser_actions.make_whitelist(entry_types, user_info)
+        whitelist = gleam.make_whitelist(entry_types, user_info)
 
-        browser_actions.do_giveaway(giveaway_info, whitelist)
+        gleam.do_giveaway(giveaway_info, whitelist)
 
         # update the info
-        browser_actions.refresh()
-        giveaway_info, user_info = browser_actions.get_gleam_info()
+        browser.refresh()
+        giveaway_info, user_info = gleam.get_info()
 
         if giveaway_info is None:
+            logger.write_error("data/errors.csv", url)
             print("Could not write log")
             continue
 

@@ -18,10 +18,9 @@ def get_urls():
     urls = []
 
     subreddit = reddit.subreddit('giveaways')
-    submissions_top = subreddit.search("flair:'gleam'", sort='top', time_filter='week')
-    submissions_new = subreddit.search("flair:'gleam'", sort='new')
+    submissions_new = subreddit.search("flair:'gleam'", sort='new', limit=None)
 
-    for submission in itertools.chain(submissions_top, submissions_new):
+    for submission in submissions_new:
         url = submission.url
         title = submission.title
         if (re.search('{WW}|{\?\?}|{ww}|{Ww}', title) or title.count('{') == 0) and url.count('https://gleam.io/') > 0:
