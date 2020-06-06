@@ -5,7 +5,7 @@
 
 Python bot to automatically find and complete gleam giveaways.  
 
-![Demo](https://imgur.com/GE8wlBg.gif)  
+![Demo](https://imgur.com/WHsk0ur.gif)  
 
 ## Warning
 
@@ -15,9 +15,7 @@ Use at your own risk.
 
 ## Prerequisites
 
-- Python3 ([Download](https://www.python.org/downloads/))
- - Chrome WebDriver for your version of Google Chrome ([Download](https://chromedriver.chromium.org/downloads))
- - Include the WebDriver location in your PATH environment variable ([Tutorial](https://zwbetz.com/download-chromedriver-binary-and-add-to-your-path-for-automated-functional-testing/))
+- Python3 ([Download](https://www.python.org/downloads/))  
 
 ## Authentication and setup
 
