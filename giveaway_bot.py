@@ -6,7 +6,7 @@ from src import reddit, gleam, twitter, logger, scraper, utils, browser
 
 def main():
     if not os.path.isfile("data/cookies.pkl"):
-        print("Did not find a authentication cookies file, please run setup.py first")
+        print("Did not find a authentication cookies file, please run login.py first")
         exit(0)
 
     history_ids = logger.read_log("data/history.csv")
@@ -50,7 +50,7 @@ def main():
     browser.init_driver(config['user-data-dir'], config['profile-directory'], load_cookies_url="https://gleam.io")
 
     for url in urls:
-        print()
+        print("\n")
         utils.start_loading_text(f"Visiting {url}")
         browser.get_url(url)
         utils.stop_loading_text(f"Visited {url}")
@@ -68,6 +68,17 @@ def main():
         print(giveaway_info['campaign']['name'], end='')
 
         whitelist = gleam.make_whitelist(entry_types, user_info)
+
+        # complete additional details like date of birth
+        if giveaway_info['campaign']['additional_contestant_details']:
+            print("\n\tCompleting additional details", end='')
+            if 'gleam' in config:
+                success = gleam.complete_additional_details(giveaway_info, config['gleam'])
+                if not success:
+                    logger.write_log("data/history.csv", giveaway_info, user_info)
+                    print("\r\tFailed to complete additional details               ")
+                    continue
+                print("\r\tCompleted additional details                  ")
 
         gleam.do_giveaway(giveaway_info, whitelist)
 
@@ -88,3 +99,4 @@ if __name__ == '__main__':
         main()
     finally:
         utils.stop_loading_text()
+        browser.close_driver()

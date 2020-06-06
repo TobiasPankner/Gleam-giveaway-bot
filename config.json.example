@@ -12,5 +12,11 @@
     "consumer_secret": "",
     "access_token": "",
     "access_token_secret": ""
+  },
+  "gleam": {
+    "birth_day": "",
+    "birth_month": "",
+    "birth_year": "",
+    "accept_terms_and_services": false
   }
 }

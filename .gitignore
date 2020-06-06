@@ -204,3 +204,5 @@ debug.log
 history.csv
 errors.csv
 cookies.pkl
+.vscode
+*.code-workspace

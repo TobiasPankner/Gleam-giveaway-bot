@@ -99,6 +99,131 @@ def create_entry_method_strings(entry_method):
     return strings
 
 
+def complete_additional_details(giveaway_info, gleam_config):
+    details = giveaway_info['campaign']['contestant_details_groups'][0]
+    fill_in_age = False
+    accept_tac = False
+
+    if gleam_config['birth_day'] != "" and gleam_config['birth_month'] != "" and gleam_config['birth_year'] != "":
+        fill_in_age = True
+
+    if gleam_config['accept_terms_and_services']:
+        accept_tac = True
+
+    # if the config says not to complete any additional details, return
+    if not fill_in_age and not accept_tac:
+        return False
+
+    details_required = [(name, detail) for (name, detail) in details.items() if 'required' in detail and detail['required']]
+
+    if len(details_required) == 0:
+        return True
+
+    for (detail_name, detail_required) in details_required:
+        if 'type' not in detail_required:
+            continue
+
+        # search for the visible detail element
+        detail_elems = browser.get_elems_by_css(f"div[ng-init^='dc.{detail_name}']")
+        visible_detail_elems = [detail_elem for detail_elem in detail_elems if detail_elem.is_displayed()]
+
+        # if the element that requires the details was not found, an entry method has to be clicked first
+        if len(visible_detail_elems) == 0:
+            entry_methods = giveaway_info['entry_methods']
+
+            # put the mandatory entry methods first
+            entry_methods_not_mandatory = [entry_method for entry_method in entry_methods if not entry_method['mandatory']]
+            entry_methods = [entry_method for entry_method in entry_methods if entry_method['mandatory']]
+            entry_methods.extend(entry_methods_not_mandatory)
+
+            for entry_method in entry_methods:
+                try:
+                    minimize_all_entries()
+                except:
+                    return False
+
+                entry_method_elem, state = get_entry_elem(entry_method['id'])
+                if entry_method_elem is None:
+                    continue
+
+                if state == EntryStates.DEFAULT:
+                    try:
+                        entry_method_elem.click()
+                    except (exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
+                        continue
+
+                wait_until_entry_loaded(entry_method['id'])
+
+                # search for the visible detail element
+                detail_elems = browser.get_elems_by_css(f"div[ng-init^='dc.{detail_name}']")
+                visible_detail_elems = [detail_elem for detail_elem in detail_elems if detail_elem.is_displayed()]
+
+                if len(visible_detail_elems) > 0:
+                    break
+
+        if len(visible_detail_elems) == 0:
+            return False
+
+        detail_elem = visible_detail_elems[0]
+
+        if detail_required['type'] == 'checkbox':
+            if 'terms_and_conditions' in detail_required and detail_required['terms_and_conditions'] and accept_tac:
+                # Terms and conditions checkbox
+                try:
+                    to_click = detail_elem.find_element_by_css_selector(".checkbox>.icon")
+                except exceptions.NoSuchElementException:
+                    return False
+
+            elif 'generated' in detail_required and detail_required['generated'] == 'minimum_age':
+                # Age checkbox
+                try:
+                    to_click = detail_elem.find_element_by_css_selector(".checkbox>.icon")
+                except exceptions.NoSuchElementException:
+                    return False
+            else:
+                return False
+
+            try:
+                to_click.click()
+            except (exceptions.ElementNotInteractableException, exceptions.ElementClickInterceptedException):
+                return False
+
+        elif detail_required['type'] == 'dob' and fill_in_age:
+            # Date of birth
+            try:
+                enter_field = detail_elem.find_element_by_css_selector("input[age-format]")
+            except exceptions.NoSuchElementException:
+                return False
+
+            if detail_required['age_format'] == "DMY":
+                enter_field.send_keys(f"{int(gleam_config['birth_day']):02}{int(gleam_config['birth_month']):02}{gleam_config['birth_year']}")
+
+            elif detail_required['age_format'] == "MDY":
+                enter_field.send_keys(f"{int(gleam_config['birth_month']):02}{int(gleam_config['birth_day']):02}{gleam_config['birth_year']}")
+
+            else:
+                return False
+
+        else:
+            return False
+
+    time.sleep(1)
+    
+    # Find the save/continue button
+    buttons = browser.get_elems_by_css(".btn-primary:not([disabled])")
+    visible_buttons = [button for button in buttons if button.is_displayed()]
+
+    if len(visible_buttons) == 0:
+        return False
+
+    try:
+        visible_buttons[0].click()
+    except (exceptions.ElementNotInteractableException, exceptions.ElementClickInterceptedException):
+        return False
+
+    return True
+
+
 def do_giveaway(giveaway_info, whitelist):
     main_window = browser.driver.current_window_handle
     elems_to_revisit = []
@@ -137,7 +262,7 @@ def do_giveaway(giveaway_info, whitelist):
         if state == EntryStates.DEFAULT:
             try:
                 entry_method_elem.click()
-            except exceptions.ElementClickInterceptedException:
+            except (exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
                 continue
 
         elif state == EntryStates.COMPLETED:
@@ -192,10 +317,14 @@ def do_giveaway(giveaway_info, whitelist):
             print(entry_method_strings['fail_str'], end='')
 
         browser.driver.switch_to.window(main_window)
-        time.sleep(0.2)
+        # time.sleep(0.2)
 
     if len(elems_to_revisit) == 0:
         return
+
+    # if the giveaway has a post entry url it will redirect to some other page after the last entry
+    if campaign['post_entry_url'] != "":
+        browser.get_url(campaign['stand_alone_url'])
 
     print("\n\n\tRevisiting some entry methods:", end='')
     browser.refresh()
@@ -245,7 +374,7 @@ def do_giveaway(giveaway_info, whitelist):
         else:
             print(entry_method_strings['fail_str'], end='')
 
-        time.sleep(0.5)
+        # time.sleep(0.5)
 
 
 def do_entry(entry_method_elem, entry_type, entry_id):

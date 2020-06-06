@@ -131,7 +131,7 @@ def get_elems_by_css(selector):
     try:
         elems = driver.find_elements_by_css_selector(selector)
     except exceptions.NoSuchElementException:
-        return None
+        return []
 
     return elems
 
