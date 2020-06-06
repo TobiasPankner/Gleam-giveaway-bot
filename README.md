@@ -38,7 +38,7 @@ To do this:
  
  - If you want to complete twitter actions on gleam you have to register for api access [here](https://developer.twitter.com/en/apps). After approval you can fill out the corresponding fields in the config. Again, **do not use your normal twitter account**.
  
-- To sign in with your various account run the setup script (`python setup.py`). This will open a browser window. First, click on any visit action like the one below. Next, finish the action and fill in the required details.  
+- To sign in with your various account run the login script (`python login.py`). This will open a browser window. First, click on any visit action like the one below. Next, finish the action and fill in the required details.  
   
   ![Register](https://imgur.com/4tsJj6U.png)  
 Then click on the "Enter with x" elements and connect the corresponding account. The more social media accounts you use, the more entries will be able to be completed.  
