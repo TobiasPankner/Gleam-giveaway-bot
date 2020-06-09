@@ -1,7 +1,6 @@
 requests==2.23.0
 requests_toolbelt==0.9.1
 selenium==3.141.0
-praw==7.0.0
 webdriver_manager==2.5.3
 colored==1.4.2
 tweepy==3.8.0

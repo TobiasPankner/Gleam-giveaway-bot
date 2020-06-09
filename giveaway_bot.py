@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 from src import reddit, gleam, twitter, logger, scraper, utils, browser
 
@@ -18,17 +19,11 @@ def main():
     with open('data/entry_types.json') as json_data_file:
         entry_types = json.load(json_data_file)
 
-    if config['reddit_auth']['client_id'] != "":
-        reddit.init(config['reddit_auth'])
+    utils.start_loading_text("Getting urls from https://reddit.com/r/giveaways/")
+    urls_reddit = reddit.get_urls()['gleam']
+    utils.stop_loading_text(f"Got {len(urls_reddit)} urls from https://reddit.com/r/giveaways/")
 
-        utils.start_loading_text("Getting urls from https://reddit.com/r/giveaways/")
-        urls_reddit = reddit.get_urls()
-        utils.stop_loading_text(f"Got {len(urls_reddit)} urls from https://reddit.com/r/giveaways/")
-
-        urls = urls_reddit.copy()
-    else:
-        print("Not using reddit, no details given in the config")
-        urls = []
+    urls = urls_reddit.copy()
 
     utils.start_loading_text("Getting urls from http://gleamlist.com")
     urls_gleamlist = scraper.get_urls_gleamlist()
@@ -78,6 +73,8 @@ def main():
                     logger.write_log("data/history.csv", giveaway_info, user_info)
                     print("\r\tFailed to complete additional details               ")
                     continue
+
+                time.sleep(1)
                 print("\r\tCompleted additional details                  ")
 
         gleam.do_giveaway(giveaway_info, whitelist)

@@ -1,35 +1,74 @@
-import itertools
 import re
+import time
 
-import praw
-
-reddit = None
+import requests
 
 
-def init(user_auth):
-    global reddit
+def get_submissions(size):
+    to_return_list = []
+    size_remaining = size
+    error_cnt = 0
+    before = int(time.time())
 
-    reddit = praw.Reddit(client_id=user_auth['client_id'],
-                         client_secret=user_auth['client_secret'],
-                         user_agent=user_auth['user_agent'])
+    while size_remaining != 0:
+        if error_cnt > 3:
+            break
+
+        if size_remaining > 500:
+            url = f"https://api.pushshift.io/reddit/submission/search/?sort_type=created_utc&subreddit=giveaways&size=500&before={before}&fields=url,link_flair_text,title,retrieved_on"
+        else:
+            url = f"https://api.pushshift.io/reddit/submission/search/?sort_type=created_utc&subreddit=giveaways&size={size_remaining}&before={before}&fields=url,link_flair_text,title,retrieved_on"
+
+        api_result = requests.get(url)
+        if api_result.status_code != 200:
+            error_cnt += 1
+            continue
+
+        last_retrieved = api_result.json()['data']
+        to_return_list.extend(last_retrieved)
+        for i in range(10):
+            try:
+                before = last_retrieved[len(last_retrieved) - 1 - i]['retrieved_on']
+            except ValueError:
+                pass
+            break
+
+        size_remaining = size_remaining - len(last_retrieved)
+
+    return to_return_list
 
 
 def get_urls():
-    urls = []
+    gleam_urls = []
+    playrgg_urls = []
+    return_dict = {"gleam": [], "playrgg": []}
 
-    subreddit = reddit.subreddit('giveaways')
-    submissions_new = subreddit.search("flair:'gleam'", sort='new', limit=None)
+    submissions = get_submissions(2500)
 
-    for submission in submissions_new:
-        url = submission.url
-        title = submission.title
-        if (re.search('{WW}|{\?\?}|{ww}|{Ww}', title) or title.count('{') == 0) and url.count('https://gleam.io/') > 0:
-            urls.append(url)
+    for submission in submissions:
+        # if the giveaway is not available worldwide, discard it
+        if not re.search('{WW}|{\?\?}|{ww}|{Ww}', submission['title']) and submission['title'].count('{') > 0:
+            continue
 
-    # remove unnecessary arguments
-    urls = [url[:url.find('?')] if url.count('?') > 0 else url for url in urls]
+        url = submission['url']
+        url = url[:url.find('?')] if url.count('?') > 0 else url
 
-    # remove duplicates
-    urls = list(dict.fromkeys(urls))
+        # if either the flair or the url contains the word "gleam" treat it as a gleam giveaway
+        if 'link_flair_text' in submission and submission['link_flair_text'].lower().count("gleam") > 0 or url.count(
+                "gleam.io") > 0:
+            gleam_urls.append(url)
 
-    return urls
+        elif 'link_flair_text' in submission and submission['link_flair_text'].lower().count(
+                "playrgg") > 0 or url.count("playr.gg") > 0:
+            playrgg_urls.append(url)
+
+        else:
+            continue
+
+    gleam_urls = list(dict.fromkeys(gleam_urls))
+    return_dict['gleam'] = gleam_urls
+
+    playrgg_urls = list(dict.fromkeys(playrgg_urls))
+    return_dict['playrgg'] = playrgg_urls
+
+    return return_dict
