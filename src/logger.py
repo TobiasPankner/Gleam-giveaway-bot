@@ -2,20 +2,43 @@ import csv
 import os
 import time
 
-from src.utils import extract_id_from_url
+from src.giveaway import GiveawayTypes
 
 
-def write_log(filename, giveaway_info, user_info):
-    campaign = giveaway_info['campaign']
-    contestant = user_info['contestant']
+def write_log(filename, giveaway):
+    if giveaway.type == GiveawayTypes.GLEAM:
+        giveaway_info = giveaway.info['giveaway_info']
+        user_info = giveaway.info['user_info']
+        campaign = giveaway_info['campaign']
+        contestant = user_info['contestant']
 
-    my_entries = sum([entry[0]['w'] for entry in contestant['entered'].values()])
-    available_entries = sum([int(method['worth']) for method in giveaway_info['entry_methods']])
+        my_entries = sum([entry[0]['w'] for entry in contestant['entered'].values()])
+        available_entries = sum([int(method['worth']) for method in giveaway_info['entry_methods']])
 
-    total_entries = giveaway_info['total_entries']
-    total_entries_str = str(total_entries) if total_entries > 0 else ""
-    win_chance_str = str(round((my_entries / total_entries) * 100, 4)) + '%' if giveaway_info[
-                                                                                    'total_entries'] > 0 else ""
+        total_entries_int = giveaway_info['total_entries']
+        total_entries = str(total_entries_int) if total_entries_int > 0 else ""
+        win_chance = str(round((my_entries / total_entries_int) * 100, 4)) + '%' if giveaway_info['total_entries'] > 0 else ""
+
+        ends_at = campaign['ends_at']
+
+    elif giveaway.type == GiveawayTypes.PLAYRGG:
+        info = giveaway.info
+        entry_methods = info['entryMethods']
+
+        my_entries = sum([entry['meta']['entry_value'] for entry in entry_methods if entry['completion_status'] == 'c' and 'entry_value' in entry['meta']])
+        available_entries = sum([entry['meta']['entry_value'] for entry in entry_methods if 'entry_value' in entry['meta']])
+
+        total_entries = ""
+        win_chance = ""
+
+        ends_at = info['expiration_unix']
+
+    else:
+        my_entries = ""
+        available_entries = ""
+        total_entries = ""
+        win_chance = ""
+        ends_at = ""
 
     write_header = False if os.path.isfile(filename) else True
 
@@ -26,14 +49,14 @@ def write_log(filename, giveaway_info, user_info):
         if write_header:
             writer.writeheader()
 
-        writer.writerow({'url': campaign['stand_alone_url'],
-                         'name': campaign['name'].encode('ascii', 'ignore').decode(),
-                         'id': campaign['key'],
+        writer.writerow({'url': giveaway.url,
+                         'name': giveaway.name.encode('ascii', 'ignore').decode(),
+                         'id': giveaway.id,
                          'my_entries': str(my_entries),
                          'available_entries': str(available_entries),
-                         'total_entries': total_entries_str,
-                         'win_chance': win_chance_str,
-                         'ends_at': str(campaign['ends_at'])
+                         'total_entries': str(total_entries),
+                         'win_chance': str(win_chance),
+                         'ends_at': str(ends_at)
                          }
                         )
 
@@ -52,8 +75,7 @@ def read_log(filename):
     return id_set
 
 
-def write_error(filename, url):
-    id_str = extract_id_from_url(url)
+def write_error(filename, giveaway):
     timestamp = int(time.time())
 
     write_header = False if os.path.isfile(filename) else True
@@ -65,7 +87,7 @@ def write_error(filename, url):
         if write_header:
             writer.writeheader()
 
-        writer.writerow({'id': id_str,
+        writer.writerow({'id': giveaway.id,
                          'timestamp': str(timestamp)
                          }
                         )

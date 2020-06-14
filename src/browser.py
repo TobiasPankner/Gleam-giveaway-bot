@@ -1,9 +1,12 @@
 import pickle
+import time
 
 from selenium import webdriver
 from selenium.common import exceptions
+from selenium.webdriver import DesiredCapabilities
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
@@ -64,26 +67,33 @@ class LocalStorage:
         return self.items().__str__()
 
 
-def init_driver(user_data_dir, profile_dir, headless=True, load_cookies_url=None):
+def init_driver(user_data_dir="", profile_dir="", headless=True):
     global driver, storage
 
     options = Options()
-    options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     if headless:
         options.add_argument("--headless")
 
-    if user_data_dir != "":
+        # disable image loading
+        chrome_prefs = {}
+        options.experimental_options["prefs"] = chrome_prefs
+        chrome_prefs["profile.default_content_settings"] = {"images": 2}
+        chrome_prefs["profile.managed_default_content_settings"] = {"images": 2}
+
+    elif user_data_dir != "":
         options.add_argument(f"user-data-dir={user_data_dir}")
         options.add_argument(f"profile-directory={profile_dir}")
 
-    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options)
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+
+    # Page load strategy none doesnt wait for the page to fully load before continuing
+    caps = DesiredCapabilities().CHROME
+    caps["pageLoadStrategy"] = "none"
+
+    driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options, desired_capabilities=caps)
 
     storage = LocalStorage(driver)
-
-    if load_cookies_url:
-        get_url(load_cookies_url)
-        load_cookies()
 
 
 def close_driver():
@@ -96,17 +106,28 @@ def close_driver():
     storage = None
 
 
-def save_cookies():
+def save_cookies(filename):
     if driver is not None:
-        pickle.dump(driver.get_cookies(), open("data/cookies.pkl", "wb"))
+        pickle.dump(driver.get_cookies(), open(filename, "wb"))
 
 
-def load_cookies():
-    for cookie in pickle.load(open("data/cookies.pkl", "rb")):
+def load_cookies(filename):
+    for cookie in pickle.load(open(filename, "rb")):
         if 'expiry' in cookie:
             del cookie['expiry']
 
         driver.add_cookie(cookie)
+
+
+def apply_cookies(url):
+    if driver:
+        get_url(url)
+        time.sleep(0.5)
+        send_escape_global()
+        if url.count("gleam.io") > 0:
+            load_cookies("data/cookies.pkl")
+        else:
+            load_cookies("data/cookies_playrgg.pkl")
 
 
 def get_url(url):
@@ -116,6 +137,10 @@ def get_url(url):
 
 def refresh():
     driver.refresh()
+
+
+def send_escape_global():
+    webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
 
 
 def get_elem_by_css(selector):
@@ -136,12 +161,13 @@ def get_elems_by_css(selector):
     return elems
 
 
-def wait_until_found(sel, timeout):
+def wait_until_found(sel, timeout, display=True):
     try:
         element_present = EC.presence_of_element_located((By.CSS_SELECTOR, sel))
         WebDriverWait(driver, timeout).until(element_present)
 
         return driver.find_element_by_css_selector(sel)
     except exceptions.TimeoutException:
-        print(f"Timeout waiting for element. ({sel})")
+        if display:
+            print(f"Timeout waiting for element. ({sel})")
         return None

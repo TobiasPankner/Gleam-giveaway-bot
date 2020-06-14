@@ -34,7 +34,16 @@ def make_whitelist(entry_types, user_info):
 
 
 def get_info():
-    not_found_elem = browser.get_elem_by_css("img[src='/images/error/404.png']")
+    # close all other tabs
+    tabs = browser.driver.window_handles
+    if len(tabs) > 1:
+        for handle in tabs[1:]:
+            browser.driver.switch_to.window(handle)
+            browser.driver.close()
+
+        browser.driver.switch_to.window(tabs[0])
+
+    not_found_elem = browser.wait_until_found("img[src='/images/error/404.png']", 2, display=False)
     if not_found_elem:
         print("\tPage doesn't exist", end='')
         return None, None
@@ -224,9 +233,12 @@ def complete_additional_details(giveaway_info, gleam_config):
     return True
 
 
-def do_giveaway(giveaway_info, whitelist):
+def do_giveaway(info):
     main_window = browser.driver.current_window_handle
     elems_to_revisit = []
+
+    giveaway_info = info['giveaway_info']
+    whitelist = info['whitelist']
     campaign = giveaway_info['campaign']
     entry_methods = giveaway_info['entry_methods']
 
@@ -303,6 +315,10 @@ def do_giveaway(giveaway_info, whitelist):
         except:
             pass
 
+        # if the giveaway has a post entry url it will redirect to some other page after the last entry
+        if browser.driver.current_url.count("gleam") == 0 and campaign['post_entry_url'] != "":
+            browser.get_url(campaign['stand_alone_url'])
+
         wait_until_entry_loaded(entry_method['id'])
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
@@ -321,10 +337,6 @@ def do_giveaway(giveaway_info, whitelist):
 
     if len(elems_to_revisit) == 0:
         return
-
-    # if the giveaway has a post entry url it will redirect to some other page after the last entry
-    if campaign['post_entry_url'] != "":
-        browser.get_url(campaign['stand_alone_url'])
 
     print("\n\n\tRevisiting some entry methods:", end='')
     browser.refresh()
@@ -484,7 +496,8 @@ def do_entry(entry_method_elem, entry_type, entry_id):
 
 
 def get_entry_elem(entry_id):
-    entry_method_elem = browser.get_elem_by_css(f"div[class^='entry-method'][id='em{entry_id}']")
+    entry_method_elem = browser.wait_until_found(f"div[class^='entry-method'][id='em{entry_id}']", 2)
+    # entry_method_elem = browser.get_elem_by_css(f"div[class^='entry-method'][id='em{entry_id}']")
     if not entry_method_elem:
         return None, None
 

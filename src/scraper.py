@@ -1,5 +1,5 @@
-from requests import get
 from bs4 import BeautifulSoup
+from requests import get
 from requests_toolbelt.threaded import pool
 
 
@@ -41,7 +41,6 @@ def get_urls_playrgg():
     # graphql query taken directly from the playr.gg site
     url = 'https://api.playr.gg/graphql?operationName=contestsBrowse&variables={"limit":500,"age":18,"country":null,"sort":"expiration:asc","keywords":null,"entered":null,"method":null,"designation":null}&extensions={"persistedQuery":{"version":1,"sha256Hash":"1977eb0b082dbbb9a0b06d27f59bda93ee60ad1c197d406a741a80181df34445"}}'
 
-    # get the total amount of pages on the site
     result = get(url)
     result = result.json()
 

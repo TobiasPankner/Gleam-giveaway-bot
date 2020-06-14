@@ -43,7 +43,7 @@ def get_urls():
     playrgg_urls = []
     return_dict = {"gleam": [], "playrgg": []}
 
-    submissions = get_submissions(2500)
+    submissions = get_submissions(1500)
 
     for submission in submissions:
         # if the giveaway is not available worldwide, discard it

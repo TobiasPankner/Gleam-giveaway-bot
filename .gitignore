@@ -203,6 +203,6 @@ venv
 debug.log
 history.csv
 errors.csv
-cookies.pkl
+*.pkl
 .vscode
 *.code-workspace

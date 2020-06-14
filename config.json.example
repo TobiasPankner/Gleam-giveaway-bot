@@ -1,6 +1,9 @@
 {
+  "do_playrgg_giveaways": true,
+
   "user-data-dir": "",
   "profile-directory": "",
+
   "twitter_auth": {
     "consumer_key": "",
     "consumer_secret": "",

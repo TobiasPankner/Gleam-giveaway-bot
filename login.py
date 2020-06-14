@@ -9,9 +9,20 @@ if __name__ == '__main__':
     browser.init_driver(config['user-data-dir'], config['profile-directory'], headless=False)
     browser.get_url("https://gleam.io/examples/competitions/every-entry-type")
 
-    input("Press any button when finished logging in\n")
+    print("Gleam login:")
+    input("\tPress any button when finished logging in\n")
 
-    browser.save_cookies()
+    browser.save_cookies("data/cookies.pkl")
+
+    playrgg = input("Do you want to complete playr.gg giveaways as well [y/n]?\n")
+    if playrgg.lower() == 'y':
+        print("Playrgg login:")
+        browser.get_url("https://playr.gg/giveaways")
+
+        input("\tPress any button when finished logging in\n")
+
+        browser.save_cookies("data/cookies_playrgg.pkl")
+
     browser.close_driver()
 
     print("Successfully saved authentication cookies")

@@ -8,31 +8,29 @@ anim_stopped = False
 
 
 def extract_id_from_url(url):
-    id_match = re.search(r"\w+/(\w{5})[/-]", url)
+    if url.count("gleam.io") > 0:
+        id_match = re.search(r"\w+/(\w{5})[/-]", url)
+    elif url.count("playr.gg") > 0:
+        id_match = re.search(r"/([\w-]{7})$", url)
+    else:
+        return None
+
     if not id_match:
         return None
 
     return id_match.group(1)
 
 
-def filter_urls(urls_to_filter, history_ids, error_ids):
-    # remove unnecessary info of the url and ignore previously visited
-    for i, url in enumerate(urls_to_filter):
-        id_str = extract_id_from_url(url)
-        if not id_str:
-            urls_to_filter[i] = ""
-            continue
+def filter_giveaways(giveaways, history_ids, error_ids):
+    new_list = []
+    seen_ids = set()
 
-        new_url = f"https://gleam.io/{id_str}/a"
-        if id_str not in history_ids and id_str not in error_ids:
-            urls_to_filter[i] = new_url
-        else:
-            urls_to_filter[i] = ""
+    for giveaway in giveaways:
+        if giveaway.id not in history_ids and giveaway.id not in error_ids and giveaway.id not in seen_ids:
+            new_list.append(giveaway)
+            seen_ids.add(giveaway.id)
 
-    urls = [url for url in urls_to_filter if url != ""]
-    urls = list(dict.fromkeys(urls))
-
-    return urls
+    return new_list
 
 
 def loading_text_anim(display_text):

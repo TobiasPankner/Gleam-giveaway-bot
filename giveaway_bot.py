@@ -1,14 +1,11 @@
 import json
 import os
-import time
 
-from src import reddit, gleam, twitter, logger, scraper, utils, browser
+from src import browser, giveaway, logger, reddit, scraper, twitter, utils
 
 
 def main():
-    if not os.path.isfile("data/cookies.pkl"):
-        print("Did not find a authentication cookies file, please run login.py first")
-        exit(0)
+    giveaway.load_json()
 
     history_ids = logger.read_log("data/history.csv")
     error_ids = logger.read_log("data/errors.csv")
@@ -16,14 +13,23 @@ def main():
     with open('config.json') as json_data_file:
         config = json.load(json_data_file)
 
-    with open('data/entry_types.json') as json_data_file:
-        entry_types = json.load(json_data_file)
+    if not os.path.isfile("data/cookies.pkl"):
+        print("Did not find a authentication cookies file, please run login.py first")
+        exit(0)
 
+    if config['do_playrgg_giveaways'] and not os.path.isfile("data/cookies_playrgg.pkl"):
+        print("If you want to complete playrgg giveaways, first run login.py and complete the steps.")
+        exit(0)
+
+    # Get all the giveaway urls
     utils.start_loading_text("Getting urls from https://reddit.com/r/giveaways/")
-    urls_reddit = reddit.get_urls()['gleam']
-    utils.stop_loading_text(f"Got {len(urls_reddit)} urls from https://reddit.com/r/giveaways/")
+    urls_reddit = reddit.get_urls()
 
-    urls = urls_reddit.copy()
+    urls = urls_reddit['gleam'].copy()
+    if config['do_playrgg_giveaways']:
+        urls.extend(urls_reddit['playrgg'])
+
+    utils.stop_loading_text(f"Got {len(urls)} urls from https://reddit.com/r/giveaways/")
 
     utils.start_loading_text("Getting urls from http://gleamlist.com")
     urls_gleamlist = scraper.get_urls_gleamlist()
@@ -31,64 +37,59 @@ def main():
 
     urls.extend(urls_gleamlist)
 
-    print(f"\nTotal urls: {len(urls)}")
+    if config['do_playrgg_giveaways']:
+        utils.start_loading_text("Getting urls from https://playr.gg/giveaways")
+        urls_playrgg = scraper.get_urls_playrgg()
+        utils.stop_loading_text(f"Got {len(urls_playrgg)} urls from https://playr.gg/giveaways")
 
-    urls = utils.filter_urls(urls, history_ids, error_ids)
+        urls.extend(urls_playrgg)
 
-    print(f"After duplicate removal: {len(urls)}")
+    giveaways = []
+    for url in urls:
+        try:
+            giveaways.append(giveaway.Giveaway(url))
+        except ValueError:
+            continue
+
+    giveaways = utils.filter_giveaways(giveaways, history_ids, error_ids)
+
+    print(f"\nTotal givewaways after filtering: {len(giveaways)}")
 
     if config['twitter_auth']['consumer_key'] != "":
         twitter.init(config['twitter_auth'])
     else:
         print("Not using twitter, no details given in the config")
 
-    browser.init_driver(config['user-data-dir'], config['profile-directory'], load_cookies_url="https://gleam.io")
+    browser.init_driver()
 
-    for url in urls:
+    # load the cookies
+    browser.apply_cookies("https://gleam.io/")
+    if config['do_playrgg_giveaways']:
+        browser.apply_cookies("https://playr.gg/")
+
+    # complete the giveaways
+    for g in giveaways:
         print("\n")
-        utils.start_loading_text(f"Visiting {url}")
-        browser.get_url(url)
-        utils.stop_loading_text(f"Visited {url}")
+        browser.get_url(g.url)
+        print(f"Visited {g.url}")
 
-        giveaway_info, user_info = gleam.get_info()
+        try:
+            g.get_info()
 
-        if giveaway_info is None:
-            logger.write_error("data/errors.csv", url)
+            print(g.name, end='', flush=True)
+
+            g.complete()
+
+            # update the info
+            browser.refresh()
+
+            g.get_info(after_giveaway=True)
+
+        except ValueError:
+            logger.write_error("data/errors.csv", g)
             continue
 
-        if 'authentications' not in user_info['contestant']:
-            print("Not logged in with name+email")
-            exit(0)
-
-        print(giveaway_info['campaign']['name'], end='')
-
-        whitelist = gleam.make_whitelist(entry_types, user_info)
-
-        # complete additional details like date of birth
-        if giveaway_info['campaign']['additional_contestant_details']:
-            print("\n\tCompleting additional details", end='')
-            if 'gleam' in config:
-                success = gleam.complete_additional_details(giveaway_info, config['gleam'])
-                if not success:
-                    logger.write_log("data/history.csv", giveaway_info, user_info)
-                    print("\r\tFailed to complete additional details               ")
-                    continue
-
-                time.sleep(1)
-                print("\r\tCompleted additional details                  ")
-
-        gleam.do_giveaway(giveaway_info, whitelist)
-
-        # update the info
-        browser.refresh()
-        giveaway_info, user_info = gleam.get_info()
-
-        if giveaway_info is None:
-            logger.write_error("data/errors.csv", url)
-            print("Could not write log")
-            continue
-
-        logger.write_log("data/history.csv", giveaway_info, user_info)
+        logger.write_log("data/history.csv", g)
 
 
 if __name__ == '__main__':
