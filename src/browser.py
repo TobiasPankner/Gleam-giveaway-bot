@@ -143,6 +143,18 @@ def send_escape_global():
     webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
 
 
+def cleanup_tabs():
+    # close all other tabs
+    tabs = driver.window_handles
+    if len(tabs) > 1:
+        for handle in tabs[1:]:
+            driver.switch_to.window(handle)
+            send_escape_global()
+            driver.close()
+
+        driver.switch_to.window(tabs[0])
+
+
 def get_elem_by_css(selector):
     try:
         elem = driver.find_element_by_css_selector(selector)

@@ -4,6 +4,7 @@ from enum import Enum
 
 import colored
 from colored import stylize
+from selenium.common import exceptions
 
 from src import utils, gleam, playrgg
 
@@ -25,6 +26,26 @@ class GiveawayTypes(Enum):
     UNKNOWN = 0
     GLEAM = 1
     PLAYRGG = 2
+
+
+class CountryError(Exception):
+    pass
+
+
+class EndedError(Exception):
+    pass
+
+
+class NotStartedError(Exception):
+    pass
+
+
+class PageNotAvailableError(Exception):
+    pass
+
+
+class NotLoggedInError(Exception):
+    pass
 
 
 class Giveaway:
@@ -52,10 +73,6 @@ class Giveaway:
             giveaway_info, user_info = gleam.get_info()
 
             if giveaway_info is None:
-                raise ValueError
-
-            if 'authentications' not in user_info['contestant']:
-                print("Not logged in with name+email")
                 raise ValueError
 
             whitelist = gleam.make_whitelist(entry_types, user_info)
@@ -107,7 +124,10 @@ class Giveaway:
                     time.sleep(1)
                     print("\r\tCompleted additional details                  ")
 
-            gleam.do_giveaway(self.info)
+            try:
+                gleam.do_giveaway(self.info)
+            except exceptions.UnexpectedAlertPresentException:
+                return
 
         elif self.type == GiveawayTypes.PLAYRGG:
             print("\n\tCompleting giveaway", end='')

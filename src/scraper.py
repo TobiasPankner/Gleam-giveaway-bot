@@ -24,6 +24,9 @@ def get_urls_gleamlist():
     p.join_all()
 
     for response in p.responses():
+        if response.status_code != 200:
+            continue
+
         html_soup = BeautifulSoup(response.text, 'html.parser')
 
         url_elems = html_soup.select("tbody>tr>td>div>a[href*='gleam.io']")
@@ -41,8 +44,11 @@ def get_urls_playrgg():
     # graphql query taken directly from the playr.gg site
     url = 'https://api.playr.gg/graphql?operationName=contestsBrowse&variables={"limit":500,"age":18,"country":null,"sort":"expiration:asc","keywords":null,"entered":null,"method":null,"designation":null}&extensions={"persistedQuery":{"version":1,"sha256Hash":"1977eb0b082dbbb9a0b06d27f59bda93ee60ad1c197d406a741a80181df34445"}}'
 
-    result = get(url)
-    result = result.json()
+    response = get(url)
+    if response.status_code != 200:
+        return []
+
+    result = response.json()
 
     urls = [f"https://playr.gg/giveaway/{contest['idToken']}" for contest in result['data']['contests']]
 

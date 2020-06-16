@@ -5,7 +5,7 @@ import time
 from requests import get
 from selenium.common import exceptions
 
-from src import browser, twitter
+from src import browser, twitter, giveaway
 
 
 def get_info(id_token):
@@ -13,7 +13,7 @@ def get_info(id_token):
 
     response = get(url_contest)
     if response.status_code != 200:
-        return None
+        raise giveaway.PageNotAvailableError
 
     result = response.json()['data']['contest']
 
@@ -27,17 +27,17 @@ def get_info(id_token):
 
     # wait until the giveaway is loaded
     if browser.wait_until_found(f"div[id='{id_token}']:not(.loading-wrap)", 7) is None:
-        return
+        raise giveaway.PageNotAvailableError
 
     # check if the giveaway has ended
     if browser.driver.current_url.count("ended") > 0:
-        print("\tGiveaway has ended", end='')
-        return
+        raise giveaway.EndedError
 
+    # check if the giveaway is available in the users country
     if browser.get_elem_by_css(".contest-notifications__warnings") is not None:
-        print("\tNot available in your country", end='')
-        return
+        raise giveaway.CountryError
 
+    # check the completion status of the entry methods
     for entry_method in result['entryMethods']:
         elem = browser.get_elem_by_css(f"div[id^='method-{entry_method['id']}']")
         if elem is None or not elem.is_displayed():
@@ -108,13 +108,7 @@ def do_giveaway(info):
         if not popups_disabled:
             popups_disabled = disable_popups()
 
-    handles = browser.driver.window_handles
-    if len(handles) == 1:
-        return
-
-    for handle in handles[1:]:
-        browser.driver.switch_to.window(handle)
-        browser.driver.close()
+    browser.cleanup_tabs()
 
 
 def do_entry(entry_method_elem, entry_method):
@@ -172,15 +166,7 @@ def do_entry(entry_method_elem, entry_method):
             return
 
         time.sleep(1)
-        tabs = browser.driver.window_handles
-        if len(tabs) > 1:
-            browser.send_escape_global()
-
-            for handle in tabs[1:]:
-                browser.driver.switch_to.window(handle)
-                browser.driver.close()
-
-            browser.driver.switch_to.window(tabs[0])
+        browser.cleanup_tabs()
 
 
 def get_primary_button(entry_method_id):

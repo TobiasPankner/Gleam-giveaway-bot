@@ -8,7 +8,7 @@ import colored
 from colored import stylize
 from selenium.common import exceptions
 
-from src import twitter, browser
+from src import twitter, browser, giveaway
 
 
 class EntryStates(Enum):
@@ -34,62 +34,45 @@ def make_whitelist(entry_types, user_info):
 
 
 def get_info():
-    # close all other tabs
-    tabs = browser.driver.window_handles
-    if len(tabs) > 1:
-        for handle in tabs[1:]:
-            browser.driver.switch_to.window(handle)
-            browser.driver.close()
+    browser.cleanup_tabs()
 
-        browser.driver.switch_to.window(tabs[0])
-
+    # check if the error image exists
     not_found_elem = browser.wait_until_found("img[src='/images/error/404.png']", 2, display=False)
     if not_found_elem:
-        print("\tPage doesn't exist", end='')
+        raise giveaway.PageNotAvailableError
+
+    # get the giveaway webelement
+    contestant_elem = browser.wait_until_found("div[ng-controller='EnterController']", 7)
+    campaign_elem = browser.wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
+
+    if contestant_elem is None or campaign_elem is None:
         return None, None
 
-    contestant = browser.wait_until_found("div[ng-controller='EnterController']", 7)
-    campaign = browser.wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
-
-    # if the info was not found it is probably in an iframe
-    if campaign is None:
-        iframe = browser.wait_until_found("iframe[id^='GleamEmbed']", 7)
-        if iframe is None:
-            return None, None
-
-        try:
-            browser.driver.switch_to.frame(iframe)
-
-            contestant = browser.wait_until_found("div[ng-controller='EnterController']", 7)
-            campaign = browser.wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
-
-            if campaign is None:
-                browser.driver.switch_to.default_content()
-                return None, None
-
-        except exceptions.NoSuchFrameException:
-            return None, None
-
-    campaign_info_str = campaign.get_attribute("ng-init")
+    # get the json from the webelement attribute and parse it
+    campaign_info_str = campaign_elem.get_attribute("ng-init")
     campaign_info_str = campaign_info_str.replace("initCampaign(", "")[:-1]
-
     campaign_info_json = json.loads(campaign_info_str)
 
-    contestant_info_str = contestant.get_attribute("ng-init")
+    contestant_info_str = contestant_elem.get_attribute("ng-init")
 
+    # extract the total entry count from the string
     entry_count = contestant_info_str[contestant_info_str.find("initEntryCount(") + 15:contestant_info_str.rfind(")")]
     entry_count = int(entry_count) if entry_count != "" else -1
-
-    contestant_info_str = contestant_info_str[contestant_info_str.find("{"):contestant_info_str.rfind("}") + 1]
-
-    contestant_info_json = json.loads(contestant_info_str)
 
     # add the number of total entries to the dict
     campaign_info_json['total_entries'] = entry_count
 
+    contestant_info_str = contestant_info_str[contestant_info_str.find("{"):contestant_info_str.rfind("}") + 1]
+    contestant_info_json = json.loads(contestant_info_str)
+
+    if 'authentications' not in contestant_info_json['contestant']:
+        raise giveaway.NotLoggedInError
+
+    if campaign_info_json['campaign']['finished'] or campaign_info_json['campaign']['paused']:
+        raise giveaway.EndedError
+
     if not contestant_info_json['location_allowed']:
-        print("\tNot available in your country", end='')
-        return None, None
+        raise giveaway.CountryError
 
     return campaign_info_json, contestant_info_json
 
@@ -97,12 +80,12 @@ def get_info():
 def create_entry_method_strings(entry_method):
     entry_method_str = f"entry method: {entry_method['id']} ({entry_method['entry_type']})"
     strings = {
-        "default_str": entry_method_str,
-        "success_str": '\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("green")),
-        "fail_str": '\r' + stylize("\tDid " + entry_method_str + "                        ", colored.fg("red")),
-        "ignored_str": '\r' + stylize("\tIgnored " + entry_method_str + "                        ", colored.fg("grey_46")),
-        "couldnt_see_str": '\r' + stylize("\tCouldn't see " + entry_method_str + "                        ", colored.fg("grey_46")),
-        "will_revisit_str": '\r' + stylize("\tWill revisit " + entry_method_str + "                        ", colored.fg("yellow"))
+        "default_str":      entry_method_str,
+        "success_str":      stylize(f"\r\tDid {entry_method_str}                   ",           colored.fg("green")),
+        "fail_str":         stylize(f"\r\tDid {entry_method_str}                   ",           colored.fg("red")),
+        "ignored_str":      stylize(f"\r\tIgnored {entry_method_str}                   ",       colored.fg("grey_46")),
+        "couldnt_see_str":  stylize(f"\r\tCouldn't see {entry_method_str}                   ",  colored.fg("grey_46")),
+        "will_revisit_str": stylize(f"\r\tWill revisit {entry_method_str}                   ",  colored.fg("yellow"))
     }
 
     return strings
@@ -110,19 +93,15 @@ def create_entry_method_strings(entry_method):
 
 def complete_additional_details(giveaway_info, gleam_config):
     details = giveaway_info['campaign']['contestant_details_groups'][0]
-    fill_in_age = False
-    accept_tac = False
 
-    if gleam_config['birth_day'] != "" and gleam_config['birth_month'] != "" and gleam_config['birth_year'] != "":
-        fill_in_age = True
-
-    if gleam_config['accept_terms_and_services']:
-        accept_tac = True
+    fill_in_age = gleam_config['birth_day'] != "" and gleam_config['birth_month'] != "" and gleam_config['birth_year'] != ""
+    accept_tac = gleam_config['accept_terms_and_services']
 
     # if the config says not to complete any additional details, return
     if not fill_in_age and not accept_tac:
         return False
 
+    # get the required details
     details_required = [(name, detail) for (name, detail) in details.items() if 'required' in detail and detail['required']]
 
     if len(details_required) == 0:
@@ -170,6 +149,7 @@ def complete_additional_details(giveaway_info, gleam_config):
                 if len(visible_detail_elems) > 0:
                     break
 
+        # if the details field was still not found after clicking the entry methods, return
         if len(visible_detail_elems) == 0:
             return False
 
@@ -247,21 +227,14 @@ def do_giveaway(info):
     # put the mandatory entry methods first
     entry_methods_not_mandatory = [entry_method for entry_method in entry_methods if not entry_method['mandatory']]
     entry_methods = [entry_method for entry_method in entry_methods if entry_method['mandatory']]
-
     entry_methods.extend(entry_methods_not_mandatory)
-
-    if campaign['finished'] or campaign['paused']:
-        print("\n\tGiveaway has ended")
-        return
 
     for entry_method in entry_methods:
         entry_method_strings = create_entry_method_strings(entry_method)
 
         print(f"\n\tDoing {entry_method_strings['default_str']})", end='')
-        try:
-            minimize_all_entries()
-        except:
-            return
+
+        minimize_all_entries()
 
         if entry_method['entry_type'] not in whitelist:
             print(entry_method_strings['ignored_str'], end='')
@@ -288,17 +261,16 @@ def do_giveaway(info):
             print(entry_method_strings['couldnt_see_str'], end='')
             continue
 
+        # wait for the element to be fully expanded
         wait_until_entry_loaded(entry_method['id'])
 
+        # check if the entry method is completed after a click
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
             continue
 
         if state == EntryStates.COMPLETED:
-            if state == EntryStates.COMPLETED:
-                print(entry_method_strings['success_str'], end='')
-            else:
-                print(entry_method_strings['fail_str'], end='')
+            print(entry_method_strings['success_str'], end='')
             continue
 
         to_revisit = do_entry(entry_method_elem, entry_method['entry_type'], entry_method['id'])
@@ -306,13 +278,14 @@ def do_giveaway(info):
         if to_revisit:
             elems_to_revisit.append(entry_method)
 
+        # get the continue button and click it
         cont_btn = get_continue_elem(entry_method_elem)
         if cont_btn is None:
             continue
 
         try:
             cont_btn.click()
-        except:
+        except (exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
             pass
 
         # if the giveaway has a post entry url it will redirect to some other page after the last entry
@@ -333,7 +306,6 @@ def do_giveaway(info):
             print(entry_method_strings['fail_str'], end='')
 
         browser.driver.switch_to.window(main_window)
-        # time.sleep(0.2)
 
     if len(elems_to_revisit) == 0:
         return
@@ -372,7 +344,7 @@ def do_giveaway(info):
 
         try:
             cont_btn.click()
-        except:
+        except (exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
             pass
 
         wait_until_entry_loaded(entry_method['id'])
@@ -459,8 +431,8 @@ def do_entry(entry_method_elem, entry_type, entry_id):
                 "div>div>div>div>a[ng-click^='saveEntry']")
 
             already_tweeted_elem.click()
-        except:
-            pass
+        except (exceptions. NoSuchElementException, exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
+            return
 
     elif entry_type.count("visit") > 0 or entry_type == 'custom_action':
         millis = int(round(time.time() * 1000))
@@ -497,7 +469,6 @@ def do_entry(entry_method_elem, entry_type, entry_id):
 
 def get_entry_elem(entry_id):
     entry_method_elem = browser.wait_until_found(f"div[class^='entry-method'][id='em{entry_id}']", 2)
-    # entry_method_elem = browser.get_elem_by_css(f"div[class^='entry-method'][id='em{entry_id}']")
     if not entry_method_elem:
         return None, None
 
@@ -545,4 +516,7 @@ def get_continue_elem(parent_elem):
 def minimize_all_entries():
     entry_method_elems = browser.get_elems_by_css("div[class^='entry-method'][class*='expanded']")
     for entry_method_elem in entry_method_elems:
-        entry_method_elem.click()
+        try:
+            entry_method_elem.click()
+        except (exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
+            continue

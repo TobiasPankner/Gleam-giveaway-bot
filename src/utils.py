@@ -3,7 +3,7 @@ import re
 import threading
 import time
 
-anim_thread = None
+anim_thread: threading.Thread = None
 anim_stopped = False
 
 
@@ -56,7 +56,7 @@ def stop_loading_text(finish_text=None):
     global anim_stopped
 
     anim_stopped = True
-    if anim_thread:
+    if anim_thread is not None:
         anim_thread.join()
 
         if finish_text:

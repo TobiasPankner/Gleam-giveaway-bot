@@ -91,5 +91,3 @@ def write_error(filename, giveaway):
                          'timestamp': str(timestamp)
                          }
                         )
-
-    return None

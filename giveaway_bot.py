@@ -85,6 +85,29 @@ def main():
 
             g.get_info(after_giveaway=True)
 
+        except giveaway.CountryError:
+            print("\tNot available in your country", end='')
+            logger.write_error("data/errors.csv", g)
+            continue
+
+        except giveaway.EndedError:
+            print("\tGiveaway has ended", end='')
+            logger.write_error("data/errors.csv", g)
+            continue
+
+        except giveaway.NotStartedError:
+            print("\tGiveaway has not started yet", end='')
+            continue
+
+        except giveaway.PageNotAvailableError:
+            print("\tError getting page information or page does not exist", end='')
+            logger.write_error("data/errors.csv", g)
+            continue
+
+        except giveaway.NotLoggedInError:
+            print("\tNot logged in, please run login.py", end='')
+            continue
+
         except ValueError:
             logger.write_error("data/errors.csv", g)
             continue

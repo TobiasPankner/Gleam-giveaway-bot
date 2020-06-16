@@ -47,7 +47,7 @@ def get_urls():
 
     for submission in submissions:
         # if the giveaway is not available worldwide, discard it
-        if not re.search('{WW}|{\?\?}|{ww}|{Ww}', submission['title']) and submission['title'].count('{') > 0:
+        if not re.search(r'{WW}|{\?\?}|{ww}|{Ww}', submission['title']) and submission['title'].count('{') > 0:
             continue
 
         url = submission['url']
