@@ -1,0 +1,38 @@
+{
+  "visit_click": [
+    "visit_link",
+    "discord_link",
+    "affiliate_link",
+    "instagram_post",
+    "daily_bonus",
+    "click",
+    "instagram_profile",
+    "facebook_post"
+  ],
+  "twitter": [
+    "twitter_tweet",
+    "twitter_follow",
+    "twitter_retweet",
+    "twitter_hashtag"
+  ],
+  "twitch": [
+    "twitch_follow"
+  ],
+  "mixer": [
+    "mixer_follow"
+  ],
+  "facebook": [
+    "facebook_authorization"
+  ],
+  "other": [
+    "completion_bonus",
+    "playr_follow"
+  ],
+  "blacklist": [
+    "mailing_list",
+    "donation",
+    "mixer_subscription",
+    "twitch_subscription",
+    "secret_code"
+  ]
+}

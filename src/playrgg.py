@@ -1,32 +1,89 @@
 import datetime
+import pickle
 import re
 import time
 
-from requests import get
+from requests_toolbelt import threaded
 from selenium.common import exceptions
 
 from src import browser, twitter, giveaway
 
 
+def extract_bearer_from_cookies(filename):
+    for cookie in pickle.load(open(filename, "rb")):
+        if 'name' in cookie and cookie['name'] == "playr_production_v2_token":
+            return cookie['value']
+
+
 def get_info(id_token):
+    info_dict = {}
+    bearer_token = extract_bearer_from_cookies("data/cookies_playrgg.pkl")
+
+    url_me = 'https://api.playr.gg/graphql?operationName=me&variables={}&extensions={"persistedQuery":{"version":1,"sha256Hash":"4400523464928f24a8872f40f005c5192b51de9f39c69b306441fe10f77afc6f"}}'
+    url_interactions = f'https://api.playr.gg/graphql?operationName=contestInteractions&variables={{"idTokens":["{id_token}"]}}&extensions={{"persistedQuery":{{"version":1,"sha256Hash":"89a49def37b638a67593f43834fe72660297b02a281b8472877a8dac918a10fd"}}}}'
     url_contest = f'https://api.playr.gg/graphql?operationName=contestShow&variables={{"idToken":"{id_token}"}}&extensions={{"persistedQuery":{{"version":1,"sha256Hash":"5cc2af3aa6ca938f25d28173301bbe132f587012c26b3f8904a3e475896ec13c"}}}}'
 
-    response = get(url_contest)
-    if response.status_code != 200:
-        raise giveaway.PageNotAvailableError
+    requests = [{
+        'method': 'GET',
+        'url': url_me,
+        'headers': {"Authorization": f"Bearer {bearer_token}"}
+    }, {
+        'method': 'GET',
+        'url': url_interactions,
+        'headers': {"Authorization": f"Bearer {bearer_token}"}
+    }, {
+        'method': 'GET',
+        'url': url_contest
+    }]
 
-    result = response.json()['data']['contest']
+    responses_generator, exceptions_generator = threaded.map(requests)
+    for response in responses_generator:
+        if response.status_code != 200:
+            raise giveaway.PageNotAvailableError
 
-    # sort the entry methods
-    result['entryMethods'].sort(key=lambda x: x['order'])
+        response_json = response.json()['data']
 
-    # convert the end-time to timestamp and add it to the info
-    t = result['expiration']
-    end_time = time.mktime(datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ").timetuple())
-    result["expiration_unix"] = int(end_time)
+        if response.url.count("contestInteractions") > 0:
+            info_dict['contestInteractions'] = response_json['me']['contestInteractions']
+
+        elif response.url.count("contestShow") > 0:
+            contest = response_json['contest']
+
+            # sort the entry methods
+            contest['entryMethods'].sort(key=lambda x: x['order'])
+
+            # convert the end-time to timestamp and add it to the info
+            t = contest['expiration']
+            end_time = time.mktime(datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ").timetuple())
+            contest["expiration_unix"] = int(end_time)
+
+            info_dict['contest'] = response_json['contest']
+
+        else:
+            info_dict['user'] = response_json['me']
+
+    completed_entry_ids = []
+    # get the ids of the completed entries
+    for completed_entry in info_dict['contestInteractions'][0]['entries']:
+        completed_entry_ids.append(completed_entry['entryMethodId'])
+
+    # add a completion status to the entry methods
+    for entry in info_dict['contest']['entryMethods']:
+        if int(entry['id']) in completed_entry_ids:
+            entry['completion_status'] = 'c'
+
+        else:
+            elem = browser.get_elem_by_css(f"div[id^='method-{entry['id']}']")
+            if elem is None or not elem.is_displayed():
+                # couldnt see element
+                entry['completion_status'] = 'cns'
+            else:
+                entry['completion_status'] = 'nc'
+
+    # check for errors
 
     # wait until the giveaway is loaded
-    if browser.wait_until_found(f"div[id='{id_token}']:not(.loading-wrap)", 7) is None:
+    if browser.wait_until_found(f"div[id='{info_dict['contest']['idToken']}']:not(.loading-wrap)", 7) is None:
         raise giveaway.PageNotAvailableError
 
     # check if the giveaway has ended
@@ -37,37 +94,31 @@ def get_info(id_token):
     if browser.get_elem_by_css(".contest-notifications__warnings") is not None:
         raise giveaway.CountryError
 
-    # check the completion status of the entry methods
-    for entry_method in result['entryMethods']:
-        elem = browser.get_elem_by_css(f"div[id^='method-{entry_method['id']}']")
-        if elem is None or not elem.is_displayed():
-            # could not see
-            entry_method['completion_status'] = "cns"
-            continue
+    return info_dict
 
-        classes = elem.get_attribute("class")
-        class_list = classes.split(' ')
 
-        if 'contest-entry-join-wrap--entered' in class_list:
-            # completed
-            entry_method['completion_status'] = "c"
-            continue
-        else:
-            # not completed
-            entry_method['completion_status'] = "nc"
-            continue
+def make_whitelist(entry_types, info):
+    whitelist = []
 
-    return result
+    integrations = info['user']['integrations']
+    providers = [integration['provider'] for integration in integrations]
+
+    for provider in providers:
+        if provider in entry_types:
+            whitelist.extend(entry_types[provider])
+
+    whitelist.extend(entry_types['other'])
+    whitelist.extend(entry_types['visit_click'])
+
+    return whitelist
 
 
 def do_giveaway(info):
     popups_disabled = False
     main_window = browser.driver.current_window_handle
 
-    blacklist = ['twitch_subscription', 'secret_code', 'affiliate_link', 'donation']
-
-    if browser.wait_until_found(f"div[id='{info['idToken']}']:not(.loading-wrap)", 4) is None:
-        return
+    whitelist = info['whitelist']
+    info = info['contest']
 
     # put the completion_bonus entry methods last
     entry_methods_completion_bonus = [entry_method for entry_method in info['entryMethods'] if entry_method['method'] == 'completion_bonus']
@@ -79,7 +130,7 @@ def do_giveaway(info):
     waited_for_other_entries = all(not entry_method['required'] for entry_method in entry_methods)
 
     for entry_method in info['entryMethods']:
-        if entry_method['method'] in blacklist or entry_method['completion_status'] == 'c':
+        if entry_method['method'] not in whitelist or entry_method['completion_status'] == 'c':
             # ignored or completed
             continue
 

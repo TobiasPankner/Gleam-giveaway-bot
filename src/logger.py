@@ -22,7 +22,7 @@ def write_log(filename, giveaway):
         ends_at = campaign['ends_at']
 
     elif giveaway.type == GiveawayTypes.PLAYRGG:
-        info = giveaway.info
+        info = giveaway.info['contest']
         entry_methods = info['entryMethods']
 
         my_entries = sum([entry['meta']['entry_value'] for entry in entry_methods if entry['completion_status'] == 'c' and 'entry_value' in entry['meta']])

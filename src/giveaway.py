@@ -9,14 +9,18 @@ from selenium.common import exceptions
 from src import utils, gleam, playrgg
 
 entry_types = None
+entry_types_playrgg = None
 config = None
 
 
 def load_json():
-    global entry_types, config
+    global entry_types, entry_types_playrgg, config
 
     with open('data/entry_types.json') as json_data_file:
         entry_types = json.load(json_data_file)
+
+    with open('data/entry_types_playrgg.json') as json_data_file:
+        entry_types_playrgg = json.load(json_data_file)
 
     with open('config.json') as json_data_file:
         config = json.load(json_data_file)
@@ -86,7 +90,11 @@ class Giveaway:
             if info is None:
                 raise ValueError
 
-            self.name = info['title']
+            whitelist = playrgg.make_whitelist(entry_types_playrgg, info)
+
+            info['whitelist'] = whitelist
+
+            self.name = info['contest']['title']
             self.info = info
 
             if after_giveaway:
@@ -95,7 +103,7 @@ class Giveaway:
                 couldnt_see_str = stylize("\n\tCouldn't see entry method: {id} ({method})", colored.fg("grey_46"))
 
                 to_print_list = []
-                for entry_method in info['entryMethods']:
+                for entry_method in info['contest']['entryMethods']:
                     if entry_method['completion_status'] == 'c':
                         to_print_list.append(success_str.format(**entry_method))
                     elif entry_method['completion_status'] == 'cns':
