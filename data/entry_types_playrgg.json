@@ -26,10 +26,10 @@
   ],
   "other": [
     "completion_bonus",
-    "playr_follow"
+    "playr_follow",
+    "mailing_list"
   ],
   "blacklist": [
-    "mailing_list",
     "donation",
     "mixer_subscription",
     "twitch_subscription",

@@ -39,7 +39,10 @@ To do this:
   ![Register](https://imgur.com/4tsJj6U.png)  
 Then click on the "Enter with x" elements and connect the corresponding account. The more social media accounts you use, the more entries will be able to be completed.  
   
-  When you are done connecting your accounts press any button and the setup is finished.
+  When you are done connecting your accounts press any button. After this you can choose if you want to login with playr.gg as well. This is not required but gets you a few more giveaways to complete. After choosing yes with "y", the playr.gg website should open. Here you can login or register an account.
+  As with gleam, the more accounts you link (by pressing on giveaways), the more entries will be able to be completed. Available accounts are twitter, mixer, twitch and facebook.
   
 ## Running the script
-After the setup above is completed, start the script (`python giveaway_bot.py`). Now the bot will fetch urls from "http://gleamlist.com" and from "https://www.reddit.com/r/giveaways/".
+After the setup above is completed, start the script (`python giveaway_bot.py`). Now the bot will fetch urls from "http://gleamlist.com" and from "https://www.reddit.com/r/giveaways/". If you configured playr.gg it will also get giveaways from
+their site.  
+Now the program should open link after link and complete the giveaways.

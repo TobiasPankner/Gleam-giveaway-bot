@@ -175,7 +175,7 @@ def get_elems_by_css(selector):
 
 def wait_until_found(sel, timeout, display=True):
     try:
-        element_present = EC.presence_of_element_located((By.CSS_SELECTOR, sel))
+        element_present = EC.visibility_of_element_located((By.CSS_SELECTOR, sel))
         WebDriverWait(driver, timeout).until(element_present)
 
         return driver.find_element_by_css_selector(sel)

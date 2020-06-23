@@ -1,11 +1,11 @@
 import json
 import time
 import urllib.parse as urlparse
-from enum import Enum
 from urllib.parse import parse_qs
 
 import colored
 from colored import stylize
+from enum import Enum
 from selenium.common import exceptions
 
 from src import twitter, browser, giveaway
@@ -40,6 +40,8 @@ def get_info():
     not_found_elem = browser.wait_until_found("img[src='/images/error/404.png']", 2, display=False)
     if not_found_elem:
         raise giveaway.PageNotAvailableError
+
+
 
     # get the giveaway webelement
     contestant_elem = browser.wait_until_found("div[ng-controller='EnterController']", 7)
@@ -139,6 +141,9 @@ def complete_additional_details(giveaway_info, gleam_config):
                         entry_method_elem.click()
                     except (exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
                         continue
+
+                elif state == EntryStates.HIDDEN:
+                    continue
 
                 wait_until_entry_loaded(entry_method['id'])
 
