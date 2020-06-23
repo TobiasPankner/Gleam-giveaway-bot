@@ -1,11 +1,11 @@
 import json
 import time
 import urllib.parse as urlparse
+from enum import Enum
 from urllib.parse import parse_qs
 
 import colored
 from colored import stylize
-from enum import Enum
 from selenium.common import exceptions
 
 from src import twitter, browser, giveaway
@@ -75,6 +75,9 @@ def get_info():
 
     if not contestant_info_json['location_allowed']:
         raise giveaway.CountryError
+
+    if campaign_info_json['campaign']['starts_at'] > int(time.time()):
+        raise giveaway.NotStartedError
 
     return campaign_info_json, contestant_info_json
 
