@@ -41,8 +41,6 @@ def get_info():
     if not_found_elem:
         raise giveaway.PageNotAvailableError
 
-
-
     # get the giveaway webelement
     contestant_elem = browser.wait_until_found("div[ng-controller='EnterController']", 7)
     campaign_elem = browser.wait_until_found("div[ng-controller='EnterController']>div[ng-init^='initCampaign']", 1)
@@ -192,14 +190,27 @@ def complete_additional_details(giveaway_info, gleam_config):
             except exceptions.NoSuchElementException:
                 return False
 
-            if detail_required['age_format'] == "DMY":
-                enter_field.send_keys(f"{int(gleam_config['birth_day']):02}{int(gleam_config['birth_month']):02}{gleam_config['birth_year']}")
+            age_format = ""
+            if 'age_format' in detail_required:
+                if detail_required['age_format'] == "DMY":
+                    age_format = "dmy"
 
-            elif detail_required['age_format'] == "MDY":
-                enter_field.send_keys(f"{int(gleam_config['birth_month']):02}{int(gleam_config['birth_day']):02}{gleam_config['birth_year']}")
+                elif detail_required['age_format'] == "MDY":
+                    age_format = "mdy"
+
+            elif 'format' in detail_required:
+                if detail_required['format'] == "DD/MM/YYYY":
+                    age_format = "dmy"
+                elif detail_required['format'] == "MM/DD/YYYY":
+                    age_format = "mdy"
 
             else:
                 return False
+
+            if age_format == "dmy":
+                enter_field.send_keys(f"{int(gleam_config['birth_day']):02}{int(gleam_config['birth_month']):02}{gleam_config['birth_year']}")
+            else:
+                enter_field.send_keys(f"{int(gleam_config['birth_month']):02}{int(gleam_config['birth_day']):02}{gleam_config['birth_year']}")
 
         else:
             return False
@@ -498,7 +509,7 @@ def get_entry_elem(entry_id):
 
 
 def wait_until_entry_loaded(entry_id):
-    browser.wait_until_found(f"div.entry-method[id='em{entry_id}']>a:not(.loading)", 4)
+    browser.wait_until_found(f"div.entry-method[id='em{entry_id}']>a:not(.loading)", 5)
 
 
 def get_continue_elem(parent_elem):
@@ -517,6 +528,9 @@ def get_continue_elem(parent_elem):
                         "div[class^='form-actions']>a[ng-click^='saveEntry']")
                 except exceptions.NoSuchElementException:
                     return None
+
+    except exceptions.StaleElementReferenceException:
+        return None
 
     return cont_btn
 
