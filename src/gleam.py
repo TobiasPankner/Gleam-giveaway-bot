@@ -284,6 +284,7 @@ def do_giveaway(info):
         if not checked_for_captcha:
             captcha_elem = browser.wait_until_found(".challenge", 2, display=False)
             if captcha_elem is not None and captcha_elem.is_displayed():
+                print()
                 raise giveaway.CaptchaError
 
             checked_for_captcha = True
