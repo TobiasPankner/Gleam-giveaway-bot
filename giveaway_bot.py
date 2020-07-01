@@ -108,6 +108,11 @@ def main():
             print("\tNot logged in, please run login.py", end='')
             continue
 
+        except giveaway.CaptchaError:
+            print("\tGiveaway requires Human Verification", end='')
+            logger.write_error("data/errors.csv", g)
+            continue
+
         except ValueError:
             logger.write_error("data/errors.csv", g)
             continue

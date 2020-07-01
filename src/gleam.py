@@ -235,6 +235,7 @@ def complete_additional_details(giveaway_info, gleam_config):
 def do_giveaway(info):
     main_window = browser.driver.current_window_handle
     elems_to_revisit = []
+    checked_for_captcha = False
 
     giveaway_info = info['giveaway_info']
     whitelist = info['whitelist']
@@ -279,6 +280,13 @@ def do_giveaway(info):
         elif state == EntryStates.HIDDEN:
             print(entry_method_strings['couldnt_see_str'], end='')
             continue
+
+        if not checked_for_captcha:
+            captcha_elem = browser.wait_until_found(".challenge", 2, display=False)
+            if captcha_elem is not None and captcha_elem.is_displayed():
+                raise giveaway.CaptchaError
+
+            checked_for_captcha = True
 
         # wait for the element to be fully expanded
         wait_until_entry_loaded(entry_method['id'])

@@ -52,6 +52,10 @@ class NotLoggedInError(Exception):
     pass
 
 
+class CaptchaError(Exception):
+    pass
+
+
 class Giveaway:
     def __init__(self, url, info=None, name=""):
         self.id = utils.extract_id_from_url(url)
