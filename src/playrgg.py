@@ -99,7 +99,7 @@ def get_info(id_token):
         raise giveaway.PageNotAvailableError
 
     # check if the giveaway is available in the users country
-    if browser.get_elem_by_css(".contest-notifications__warnings") is not None:
+    if browser.get_elem_by_css(".contest-notices__warnings") is not None:
         raise giveaway.CountryError
 
     # get the ids of the completed entry methods
