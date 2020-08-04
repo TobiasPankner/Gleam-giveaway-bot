@@ -185,32 +185,44 @@ def complete_additional_details(giveaway_info, gleam_config):
 
         elif detail_required['type'] == 'dob' and fill_in_age:
             # Date of birth
+            enter_field = None
             try:
                 enter_field = detail_elem.find_element_by_css_selector("input[age-format]")
             except exceptions.NoSuchElementException:
-                return False
+                try:
+                    day_field = detail_elem.find_element_by_css_selector(".dob-input-field__day")
+                    month_field = detail_elem.find_element_by_css_selector(".dob-input-field__month")
+                    year_field = detail_elem.find_element_by_css_selector(".dob-input-field__year")
+                except exceptions.NoSuchElementException:
+                    return False
 
-            age_format = ""
-            if 'age_format' in detail_required:
-                if detail_required['age_format'] == "DMY":
-                    age_format = "dmy"
+            if enter_field is not None:
+                age_format = ""
+                if 'age_format' in detail_required:
+                    if detail_required['age_format'] == "DMY":
+                        age_format = "dmy"
 
-                elif detail_required['age_format'] == "MDY":
-                    age_format = "mdy"
+                    elif detail_required['age_format'] == "MDY":
+                        age_format = "mdy"
 
-            elif 'format' in detail_required:
-                if detail_required['format'] == "DD/MM/YYYY":
-                    age_format = "dmy"
-                elif detail_required['format'] == "MM/DD/YYYY":
-                    age_format = "mdy"
+                elif 'format' in detail_required:
+                    if detail_required['format'] == "DD/MM/YYYY":
+                        age_format = "dmy"
+                    elif detail_required['format'] == "MM/DD/YYYY":
+                        age_format = "mdy"
+
+                else:
+                    return False
+
+                if age_format == "dmy":
+                    enter_field.send_keys(f"{int(gleam_config['birth_day']):02}{int(gleam_config['birth_month']):02}{gleam_config['birth_year']}")
+                else:
+                    enter_field.send_keys(f"{int(gleam_config['birth_month']):02}{int(gleam_config['birth_day']):02}{gleam_config['birth_year']}")
 
             else:
-                return False
-
-            if age_format == "dmy":
-                enter_field.send_keys(f"{int(gleam_config['birth_day']):02}{int(gleam_config['birth_month']):02}{gleam_config['birth_year']}")
-            else:
-                enter_field.send_keys(f"{int(gleam_config['birth_month']):02}{int(gleam_config['birth_day']):02}{gleam_config['birth_year']}")
+                day_field.send_keys(f"{int(gleam_config['birth_day']):02}")
+                month_field.send_keys(f"{int(gleam_config['birth_month']):02}")
+                day_field.send_keys(gleam_config['birth_year'])
 
         else:
             return False
@@ -262,6 +274,11 @@ def do_giveaway(info):
 
         entry_method_elem, state = get_entry_elem(entry_method['id'])
         if entry_method_elem is None:
+            if not checked_for_captcha:
+                captcha_elem = browser.wait_until_found(".challenge", 2, display=False)
+                if captcha_elem is not None and captcha_elem.is_displayed():
+                    print()
+                    raise giveaway.CaptchaError
             continue
 
         if state == EntryStates.DEFAULT:
@@ -280,14 +297,6 @@ def do_giveaway(info):
         elif state == EntryStates.HIDDEN:
             print(entry_method_strings['couldnt_see_str'], end='')
             continue
-
-        if not checked_for_captcha:
-            captcha_elem = browser.wait_until_found(".challenge", 2, display=False)
-            if captcha_elem is not None and captcha_elem.is_displayed():
-                print()
-                raise giveaway.CaptchaError
-
-            checked_for_captcha = True
 
         # wait for the element to be fully expanded
         wait_until_entry_loaded(entry_method['id'])
@@ -315,6 +324,14 @@ def do_giveaway(info):
             cont_btn.click()
         except (exceptions.ElementClickInterceptedException, exceptions.ElementNotInteractableException):
             pass
+
+        if not checked_for_captcha:
+            captcha_elem = browser.wait_until_found(".challenge", 2, display=False)
+            if captcha_elem is not None and captcha_elem.is_displayed():
+                print()
+                raise giveaway.CaptchaError
+
+            checked_for_captcha = True
 
         # if the giveaway has a post entry url it will redirect to some other page after the last entry
         if browser.driver.current_url.count("gleam") == 0 and campaign['post_entry_url'] != "":
