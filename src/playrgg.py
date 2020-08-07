@@ -71,6 +71,9 @@ def get_info(id_token):
         elif response.url.count("contestShow") > 0:
             contest = response_json['contest']
 
+            if contest is None:
+                raise giveaway.PageNotAvailableError
+
             # sort the entry methods
             contest['entryMethods'].sort(key=lambda x: x['order'])
 
