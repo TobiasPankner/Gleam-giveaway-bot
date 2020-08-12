@@ -86,6 +86,7 @@ def init_driver(user_data_dir="", profile_dir="", headless=True):
         options.add_argument(f"profile-directory={profile_dir}")
 
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    options.set_capability('unhandledPromptBehavior', 'dismiss')
 
     # Page load strategy none doesnt wait for the page to fully load before continuing
     caps = DesiredCapabilities().CHROME

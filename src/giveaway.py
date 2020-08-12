@@ -136,10 +136,7 @@ class Giveaway:
                     time.sleep(1)
                     print("\r\tCompleted additional details                  ")
 
-            try:
-                gleam.do_giveaway(self.info)
-            except exceptions.UnexpectedAlertPresentException:
-                return
+            gleam.do_giveaway(self.info)
 
         elif self.type == GiveawayTypes.PLAYRGG:
             print("\n\tCompleting giveaway", end='')
