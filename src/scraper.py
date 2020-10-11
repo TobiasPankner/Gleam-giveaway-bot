@@ -1,23 +1,14 @@
-from bs4 import BeautifulSoup
 from requests import get
 from requests_toolbelt.threaded import pool
 
 
 def get_urls_gleamlist():
-    url = 'http://gleamlist.com'
+    url = 'http://gleamlist.com:5000/api?page={}&order=undefined&locations'
     gleam_urls = []
 
     # get the total amount of pages on the site
-    response = get(url)
-    html_soup = BeautifulSoup(response.text, 'html.parser')
-    url_elem = html_soup.select("tbody>script")
 
-    if len(url_elem) > 0:
-        total_pages = int(str(url_elem[0].contents[0]).replace("var last = ", ""))
-    else:
-        total_pages = 30
-
-    urls_to_scrape = [f"{url}/index.php?page={page_num}" for page_num in range(1, total_pages+1)]
+    urls_to_scrape = [url.format(page_num) for page_num in range(1, 20)]
 
     # Get all responses with multithreading
     p = pool.Pool.from_urls(urls_to_scrape)
@@ -27,15 +18,13 @@ def get_urls_gleamlist():
         if response.status_code != 200:
             continue
 
-        html_soup = BeautifulSoup(response.text, 'html.parser')
+        data = response.json()
+        urls = [result["url"] for result in data["data"]["results"]]
 
-        url_elems = html_soup.select("tbody>tr>td>div>a[href*='gleam.io']")
+        if len(urls) == 0:
+            continue
 
-        if len(url_elems) == 0:
-            break
-
-        for url_elem in url_elems:
-            gleam_urls.append(url_elem['href'])
+        gleam_urls.extend(urls)
 
     return gleam_urls
 

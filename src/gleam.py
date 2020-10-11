@@ -38,7 +38,7 @@ def get_info():
 
     # check if the error image exists
     not_found_elem = browser.wait_until_found("img[src='/images/error/404.png']", 2, display=False)
-    if not_found_elem:
+    if not_found_elem is not None:
         raise giveaway.PageNotAvailableError
 
     # get the giveaway webelement
