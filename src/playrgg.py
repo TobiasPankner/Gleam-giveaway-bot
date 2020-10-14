@@ -37,7 +37,7 @@ def get_info(id_token):
         raise giveaway.NotLoggedInError
 
     url_me = 'https://api.playr.gg/graphql?operationName=me&variables={}&extensions={"persistedQuery":{"version":1,"sha256Hash":"4400523464928f24a8872f40f005c5192b51de9f39c69b306441fe10f77afc6f"}}'
-    url_interactions = f'https://api.playr.gg/graphql?operationName=contestInteractions&variables={{"idTokens":["{id_token}"]}}&extensions={{"persistedQuery":{{"version":1,"sha256Hash":"89a49def37b638a67593f43834fe72660297b02a281b8472877a8dac918a10fd"}}}}'
+    url_interactions = f'https://api.playr.gg/graphql?operationName=contestInteractions&variables={{"idTokens":["{id_token}"]}}&extensions={{"persistedQuery":{{"version":1,"sha256Hash":"f5ed8f1272ce7377542c05926b5e80a5c1ededf1583fc75a45a4ab79e2d31f29"}}}}'
     url_contest = f'https://api.playr.gg/graphql?operationName=contestShow&variables={{"idToken":"{id_token}"}}&extensions={{"persistedQuery":{{"version":1,"sha256Hash":"4e841e35d27843627b6f970c484af73576bbac0b29e47ff73e63b81bcd3b4d66"}}}}'
 
     requests = [{
