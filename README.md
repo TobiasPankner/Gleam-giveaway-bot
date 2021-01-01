@@ -32,7 +32,7 @@ To do this:
 	 5. Copy the Profile Path (On Windows, should be something like "C:\Users\User\AppData\Local\Google\Chrome\User 		Data\Profile 2" ). 
 	 6. Modify the config.json file.   In the "user-data-dir" field enter the path from before up to the "User Data" part with escaped backslashes or forward shlashes (e.g 	"C:/Users/User/AppData/Local/Google/Chrome/User Data"). In the "profile-directory" enter the profile part of the path (e.g "Profile 2").
 
- - If you want to complete twitter actions on gleam you have to register for api access [here](https://developer.twitter.com/en/apps). After approval you can fill out the corresponding fields in the config. Again, **do not use your normal twitter account**.
+ - If you want to complete twitter actions on gleam you have to register for api access [here](https://developer.twitter.com/en/apps). After the creation of an App, change the permission to "Read and Write". After you completed this, generate the keys and copy them into the config file. Again, **do not use your normal twitter account**.
  
 - To sign in with your various account run the login script (`python login.py`). This will open a browser window. First, click on any visit action like the one below. Next, finish the action and fill in the required details.  
   
